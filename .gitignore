@@ -1,0 +1,30 @@
+# Environment Variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+frontend/dist/
+frontend/node_modules/
+
+# Mac
+.DS_Store
+
+# Project specific
+backend/data/*.json
+backend.log
+frontend.log
+*.zip
+*.docx
+doc_content.txt

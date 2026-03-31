@@ -1,0 +1,71 @@
+from datetime import datetime
+
+from fastapi import APIRouter, HTTPException
+
+import storage
+from models import LeaderboardSubmitRequest
+
+router = APIRouter()
+
+
+@router.post("/submit")
+async def submit_to_leaderboard(req: LeaderboardSubmitRequest):
+    """Submit a completed session score to the leaderboard."""
+    session = storage.get_session(req.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    final_result = session.get("final_result")
+    if not final_result:
+        raise HTTPException(status_code=400, detail="Complete the interview before submitting")
+
+    display_name = (req.display_name or "Anonymous Dev").strip()[:30]
+
+    entry = {
+        "session_id": req.session_id,
+        "display_name": display_name,
+        "score": final_result["total_score"],
+        "badge": final_result["badge"],
+        "badge_title": final_result["badge_title"],
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+    rank = storage.add_to_leaderboard(entry)
+
+    return {
+        "rank": rank,
+        "entry": entry,
+        "message": f"You ranked #{rank} on the leaderboard!",
+    }
+
+
+@router.get("/")
+async def get_leaderboard(limit: int = 20, offset: int = 0):
+    """Get the top scores leaderboard."""
+    limit = max(1, min(50, limit))
+    entries = storage.get_leaderboard(limit=limit, offset=offset)
+
+    ranked = []
+    for i, entry in enumerate(entries):
+        ranked.append({
+            "rank": offset + i + 1,
+            "display_name": entry["display_name"],
+            "score": entry["score"],
+            "badge": entry["badge"],
+            "badge_title": entry["badge_title"],
+            "timestamp": entry["timestamp"],
+        })
+
+    return {
+        "entries": ranked,
+        "total": len(storage.leaderboard),
+    }
+
+
+@router.get("/rank/{session_id}")
+async def get_my_rank(session_id: str):
+    """Get the rank for a specific session."""
+    rank = storage.get_user_rank(session_id)
+    if rank == -1:
+        raise HTTPException(status_code=404, detail="Session not on leaderboard yet")
+    return {"rank": rank, "total": len(storage.leaderboard)}
