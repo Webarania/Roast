@@ -340,6 +340,77 @@ export default function Landing({ onStart }) {
         </div>
       </section>
 
+      {/* ═══════════════════ WEBARANIA TEASER ═══════════════════ */}
+      <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)', width: '80%', margin: '0 auto' }} />
+      <section style={{ padding: '100px 24px', background: 'rgba(255,69,0,0.01)', position: 'relative', overflow: 'hidden' }}>
+        {/* Background ambient glow */}
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,69,0,0.03) 0%, transparent 70%)', pointerEvents: 'none', z_index: 0 }} />
+        
+        <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative', zIndex: 1, textAlign: 'center' }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: '#ff6b35', textTransform: 'uppercase', letterSpacing: '0.2em', padding: '4px 12px', borderRadius: '4px', background: 'rgba(255,69,0,0.1)', border: '1px solid rgba(255,69,0,0.2)' }}>
+              WEBARANIA PRESENTS · COMING SOON
+            </span>
+            
+            <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, color: '#fff', marginTop: '32px', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+              We're Building Something That Gets You Into <span className="fire-gradient">FAANG</span>. But It's Locked. 🔒
+            </h2>
+            
+            <p style={{ fontSize: '18px', fontWeight: 700, color: '#6b7280', marginTop: '16px' }}>
+              Dev Roast is just the warm-up.
+            </p>
+            
+            <p style={{ fontSize: '16px', color: '#9ca3af', lineHeight: 1.7, marginTop: '24px', maxWidth: '640px', margin: '24px auto 0' }}>
+              We're at 22,000 on Instagram. When we hit 50,000 — we drop <strong>Roasted Resume</strong>.
+              <br /><br />
+              An AI that doesn't just review your resume. It rebuilds it — to FAANG acceptance standards. Role-specific. ATS-optimized. Brutally honest. The kind of feedback that used to cost ₹10,000 from a senior engineer.
+              <br /><br />
+              <span style={{ color: '#fff', fontWeight: 700 }}>Free. For our community. At 50K.</span>
+            </p>
+
+            {/* Progress Area */}
+            <div style={{ marginTop: '48px', maxWidth: '500px', margin: '48px auto 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>🔥 22,000 / 50,000 followers</span>
+                <span style={{ fontSize: '12px', color: '#ff6b35', fontWeight: 800 }}>44% TO UNLOCK</span>
+              </div>
+              <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '99px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <motion.div 
+                  initial={{ width: 0 }} 
+                  whileInView={{ width: '44%' }} 
+                  viewport={{ once: true }}
+                  transition={{ duration: 1.5, ease: 'easeOut', delay: 0.5 }}
+                  style={{ height: '100%', background: 'linear-gradient(90deg, #ff4500, #ff8c00, #ffd700)', boxShadow: '0 0 15px rgba(255,69,0,0.5)' }} 
+                />
+              </div>
+              <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#4b5563', fontSize: '12px' }}>
+                <span>⚙️ Feature locked. Community unlocks this.</span>
+              </div>
+            </div>
+
+            {/* CTA Button */}
+            <motion.div style={{ marginTop: '40px' }} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <a 
+                href="https://www.instagram.com/webarania.ai/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ 
+                  display: 'inline-flex', alignItems: 'center', gap: '12px', padding: '16px 32px', borderRadius: '14px', 
+                  background: '#fff', color: '#000', fontWeight: 900, fontSize: '16px', textDecoration: 'none',
+                  boxShadow: '0 0 30px rgba(255,255,255,0.1)'
+                }}
+              >
+                → Follow @webarania.ai and unlock this
+              </a>
+              <p style={{ fontSize: '11px', color: '#4b5563', marginTop: '16px' }}>
+                Every follow brings this closer. Tell one developer friend. That's it.
+              </p>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+      <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)', width: '80%', margin: '0 auto' }} />
+
       {/* ═══════════════════ STATS ═══════════════════ */}
       <section ref={statsRef} style={{ padding: '60px 24px', borderTop: '1px solid rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', textAlign: 'center' }}>
