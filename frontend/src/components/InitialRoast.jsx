@@ -25,7 +25,7 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1], delay },
 })
 
-export default function InitialRoast({ sessionId, resumeData, intensity = 'medium', onStartInterview }) {
+export default function InitialRoast({ sessionId, resumeData, intensity = 'medium', onStartInterview, onReset }) {
   const [roast,    setRoast]    = useState(null)
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState('')
@@ -95,8 +95,23 @@ export default function InitialRoast({ sessionId, resumeData, intensity = 'mediu
     <div style={{ background: '#050505', minHeight: '100vh', padding: '48px 16px' }}>
       <div style={{ maxWidth: '640px', margin: '0 auto' }}>
 
+        {/* Back to Home */}
+        <motion.div {...fadeUp(0)} style={{ marginBottom: '24px' }}>
+          <button 
+            onClick={onReset}
+            style={{ 
+              background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', 
+              fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' 
+            }}
+            onMouseOver={e => e.target.style.color = '#fff'}
+            onMouseOut={e => e.target.style.color = '#4b5563'}
+          >
+            ← Back to Home
+          </button>
+        </motion.div>
+
         {/* Header */}
-        <motion.div {...fadeUp(0)} style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <motion.div {...fadeUp(0.05)} style={{ textAlign: 'center', marginBottom: '32px' }}>
           <motion.div
             animate={{ scale: [1, 1.1, 1], rotate: [0, 8, -8, 0] }}
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}

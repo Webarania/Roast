@@ -62,7 +62,7 @@ function Timer({ seconds, paused }) {
   )
 }
 
-export default function InterviewMode({ sessionId, questions, onComplete }) {
+export default function InterviewMode({ sessionId, questions, onComplete, onReset }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answer,       setAnswer]       = useState('')
   const [evaluating,   setEvaluating]   = useState(false)
@@ -191,6 +191,25 @@ export default function InterviewMode({ sessionId, questions, onComplete }) {
       <div className="particles-container opacity-30" aria-hidden="true">
         {Array.from({ length: 6 }).map((_, i) => <div key={i} className="particle" />)}
       </div>
+
+      {/* Back to Home */}
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }} 
+        animate={{ opacity: 1, x: 0 }}
+        style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 20 }}
+      >
+        <button 
+          onClick={onReset}
+          style={{ 
+            background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', 
+            fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' 
+          }}
+          onMouseOver={e => e.target.style.color = '#fff'}
+          onMouseOut={e => e.target.style.color = '#4b5563'}
+        >
+          ← Back to Home
+        </button>
+      </motion.div>
 
       {/* Progress Bar */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-2xl mb-6 relative z-10">

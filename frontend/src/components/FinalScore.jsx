@@ -246,6 +246,25 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
         {Array.from({ length: 10 }).map((_, i) => <div key={i} className="particle" />)}
       </div>
 
+      {/* Back to Home */}
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }} 
+        animate={{ opacity: 1, x: 0 }}
+        style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 20 }}
+      >
+        <button 
+          onClick={onReset}
+          style={{ 
+            background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', 
+            fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' 
+          }}
+          onMouseOver={e => e.target.style.color = '#fff'}
+          onMouseOut={e => e.target.style.color = '#4b5563'}
+        >
+          ← Back to Home
+        </button>
+      </motion.div>
+
       <motion.div
         variants={containerVariants}
         initial="hidden"

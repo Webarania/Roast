@@ -88,6 +88,7 @@ function MainApp() {
           resumeData={resumeData}
           intensity={intensity}
           onStartInterview={handleStartInterview}
+          onReset={reset}
         />
       )}
       {screen === 'interview' && sessionId && questions.length > 0 && (
@@ -95,6 +96,7 @@ function MainApp() {
           sessionId={sessionId}
           questions={questions}
           onComplete={handleInterviewComplete}
+          onReset={reset}
         />
       )}
       {screen === 'final' && sessionId && (
