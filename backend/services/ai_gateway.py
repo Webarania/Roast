@@ -152,55 +152,40 @@ def safe_join(items: Any, sep: str = ", ") -> str:
             str_items.append(str(item))
     return sep.join(str_items)
 
-# ─── Prompts & Instructions ──────────────────────────────────────────────────
-
-RESUME_PARSE_PROMPT = """
-Extract structured technical info from this resume text.
-Resume:
-{resume_text}
-
-Return ONLY valid JSON:
-{{
-  "name": "Developer's name",
-  "job_title": "Job title",
-  "domain": "e.g. Web Development",
-  "skills": ["skill1", "skill2"],
-  "projects": [
-    {{
-      "name": "Project name",
-      "description": "1-line description",
-      "tech_stack": ["React"]
-    }}
-  ],
-  "experience_level": "junior|mid|senior",
-  "years_of_experience": 2
-}}
-"""
-
 # ─── API Implementation ──────────────────────────────────────────────────────
 
 async def parse_resume(resume_text: str) -> Dict:
-    prompt = RESUME_PARSE_PROMPT.format(resume_text=resume_text[:4000])
+    prompt = f"""
+    Extract structured technical info from this resume text.
+    Resume:
+    {resume_text[:4000]}
+
+    Return ONLY valid JSON with this structure:
+    {{
+      "name": "Developer Name",
+      "job_title": "Current Role",
+      "domain": "e.g. Frontend, Backend",
+      "skills": ["Python", "React"],
+      "projects": [{{"name": "P1", "description": "...", "tech_stack": ["Node"]}}],
+      "experience_level": "junior|mid|senior",
+      "years_of_experience": 3
+    }}
+    """
     raw = await ai_call(prompt, system="Technical resume parser. Return only valid JSON.", timeout=20.0)
     return extract_json(raw)
 
 async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -> Dict:
-    intensity_map = {
-        "mild": "gentle teasing",
-        "medium": "sarcastic and witty",
-        "savage": "brutal and unforgiving"
-    }
-    style = intensity_map.get(intensity, "sarcastic")
+    style = "gentle teasing" if intensity == "mild" else "brutal and unforgiving" if intensity == "savage" else "sarcastic and witty"
     
     prompt = f"""
     Roast this dev resume. Tone: {style}.
     Name: {resume_data.get('name')}
     Skills: {safe_join(resume_data.get('skills'))}
-    Exp: {resume_data.get('experience_level')}
+    Experience: {resume_data.get('experience_level')}
     
     Return ONLY valid JSON:
     {{
-      "roast": "Funny verdict",
+      "roast": "Brutal 2-4 line verdict",
       "weak_skills": ["skill1"],
       "strong_skills": ["skill2"],
       "red_flags": ["flag1"]
@@ -211,7 +196,7 @@ async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -
 
 async def generate_questions(resume_data: dict, count: int = 5, intensity: str = "medium") -> list:
     prompt = f"""
-    Generate {count} scenario-based interview questions for a {resume_data.get('experience_level')} dev.
+    Generate {count} real-world, scenario-based interview questions for a {resume_data.get('experience_level')} dev.
     Skills: {safe_join(resume_data.get('skills'))}
     Intensity: {intensity}
     
@@ -219,11 +204,11 @@ async def generate_questions(resume_data: dict, count: int = 5, intensity: str =
     [
       {{
         "id": 1,
-        "text": "Question text",
-        "skill_tested": "Skill",
+        "text": "Full question text",
+        "skill_tested": "Primary skill",
         "difficulty": "easy|medium|hard",
-        "category": "debug|system_design",
-        "context": "Why relevant"
+        "category": "debug|system_design|code_review",
+        "context": "Why this is relevant to their resume"
       }}
     ]
     """
@@ -233,25 +218,47 @@ async def generate_questions(resume_data: dict, count: int = 5, intensity: str =
 async def evaluate_answer(question: str, skill: str, answer: str) -> Dict:
     if not answer or len(answer.strip()) < 5:
         return {
-            "score": 0, "mini_roast": "Silence? Bold move.",
-            "is_bluffing": True, "feedback": "Please answer the question."
+            "score": 0,
+            "mini_roast": "Silence? Bold move. You're clearly bluffing. 😬",
+            "is_bluffing": True,
+            "feedback": "You didn't actually provide an answer.",
+            "approach_rating": "missing",
+            "key_missing": "An actual answer"
         }
-    prompt = f"Question: {question}\nAnswer: {answer}\nSkill: {skill}\nEvaluate as a senior tech lead."
-    raw = await ai_call(prompt, system="Tough tech evaluator. Score 0-10. Return JSON.", timeout=12.0)
-    return extract_json(raw)
+    
+    prompt = f"""
+    Evaluate this interview answer as a senior tech lead.
+    Question: {question}
+    Candidate Answer: {answer}
+    Skill Tested: {skill}
+
+    Return ONLY valid JSON:
+    {{
+      "score": <0-10 integer>,
+      "mini_roast": "Short funny comment about the answer",
+      "is_bluffing": <true if answer is fabricated/copied/vague>,
+      "feedback": "2-3 sentences of constructive feedback",
+      "approach_rating": "strong|adequate|weak|missing",
+      "key_missing": "The most important thing they missed"
+    }}
+    """
+    raw = await ai_call(prompt, system="Tough tech evaluator. Return JSON.", timeout=12.0)
+    result = extract_json(raw)
+    result["score"] = max(0, min(10, int(result.get("score", 0))))
+    return result
 
 async def generate_final_roast(session: dict) -> Dict:
     evals = session.get("evaluations", [])
     avg = sum(e.get("score", 0) for e in evals) / len(evals) if evals else 0
     
     prompt = f"""
-    Final verdict for {session.get('resume_data', {}).get('name')}.
+    Generate the final verdict for {session.get('resume_data', {}).get('name')}.
     Avg Score: {avg}/10. 
-    Summary: {safe_join([f"Q: {e.get('score')}" for e in evals])}
+    Summary: {safe_join([f"Q: {e.get('skill')} (Score: {e.get('score')}/10)" for e in evals])}
     
     Return ONLY valid JSON:
     {{
-      "final_roast": "Brutal final paragraph",
+      "final_roast": "Final 3-5 line brutal paragraph",
       "fake_skills": ["skill1"],
       "verdict": "One-line summary"
     }}
@@ -260,22 +267,68 @@ async def generate_final_roast(session: dict) -> Dict:
     return extract_json(raw)
 
 async def generate_hint(question: str, skill: str, partial_answer: str, hint_number: int = 1) -> Dict:
-    prompt = f"Question: {question}\nSkill: {skill}\nCurrent: {partial_answer}\nHint #{hint_number}/3"
-    raw = await ai_call(prompt, system="Helpful senior dev. Give a nudge, not the answer. Return JSON: {'hint': '...', 'direction': '...'}", timeout=10.0)
+    prompt = f"""
+    The candidate is stuck on this question: {question}
+    Skill: {skill}
+    Current Answer: {partial_answer}
+    Hint Number: {hint_number}/3
+
+    Return ONLY valid JSON:
+    {{
+      "hint": "Small nudge toward the answer",
+      "direction": "General area to think about"
+    }}
+    """
+    raw = await ai_call(prompt, system="Helpful senior dev. Return JSON.", timeout=10.0)
     return extract_json(raw)
 
 async def generate_followup(original_question: str, answer: str, score: int, skill: str, approach_rating: str = "adequate") -> Dict:
-    prompt = f"Original: {original_question}\nAnswer: {answer}\nScore: {score}\nSkill: {skill}\nAsk a deeper follow-up."
-    raw = await ai_call(prompt, system="Interviewer deep-dive mode. Return JSON: {'followup_question': '...', 'why': '...'}", timeout=12.0)
+    prompt = f"""
+    Ask a follow-up question based on this exchange:
+    Original: {original_question}
+    Answer: {answer}
+    Score: {score}/10
+    Skill: {skill}
+
+    Return ONLY valid JSON:
+    {{
+      "followup_question": "Deep-dive question text",
+      "why": "Why this follow-up is important"
+    }}
+    """
+    raw = await ai_call(prompt, system="Interviewer deep-dive mode. Return JSON.", timeout=12.0)
     return extract_json(raw)
 
 async def generate_code_challenge(resume_data: dict) -> Dict:
-    prompt = f"Generate 5-min code challenge for: {safe_join(resume_data.get('skills', []))}"
+    prompt = f"""
+    Generate a 5-min coding challenge for: {safe_join(resume_data.get('skills', []))}
+    Experience Level: {resume_data.get('experience_level')}
+
+    Return ONLY valid JSON:
+    {{
+      "title": "Challenge Title",
+      "description": "Problem statement",
+      "language": "JavaScript/Python/etc",
+      "starter_code": "Code template",
+      "examples": [{{"input": "...", "output": "..."}}]
+    }}
+    """
     raw = await ai_call(prompt, system="Practical code challenge generator. Return JSON.", timeout=15.0)
     return extract_json(raw)
 
 async def evaluate_code(challenge: dict, code: str) -> Dict:
-    prompt = f"Challenge: {challenge.get('title')}\nCode: {code}\nEvaluate."
+    prompt = f"""
+    Evaluate this code for the challenge "{challenge.get('title')}".
+    Code: {code}
+
+    Return ONLY valid JSON:
+    {{
+      "score": <0-10>,
+      "works": <bool>,
+      "roast": "Funny comment",
+      "feedback": "What to improve"
+    }}
+    """
     raw = await ai_call(prompt, system="Code reviewer mode. Return JSON.", timeout=15.0)
     return extract_json(raw)
 

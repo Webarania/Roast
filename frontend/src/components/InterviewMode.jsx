@@ -4,11 +4,12 @@ import { evaluateAnswer, getHint, getFollowup } from '../api/client'
 
 /* SVG circular progress */
 function CircularScore({ score, size = 100 }) {
+  const displayScore = score ?? 0
   const r = 42
   const circ = 2 * Math.PI * r
-  const pct = Math.max(0, Math.min(score / 10, 1))
+  const pct = Math.max(0, Math.min(displayScore / 10, 1))
   const dashoffset = circ * (1 - pct)
-  const color = score >= 8 ? '#4ade80' : score >= 5 ? '#fbbf24' : '#f87171'
+  const color = displayScore >= 8 ? '#4ade80' : displayScore >= 5 ? '#fbbf24' : '#f87171'
   return (
     <motion.svg width={size} height={size} viewBox="0 0 100 100"
       initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
@@ -21,7 +22,7 @@ function CircularScore({ score, size = 100 }) {
         transform="rotate(-90 50 50)" style={{ filter: `drop-shadow(0 0 6px ${color})` }} />
       <motion.text x="50" y="50" textAnchor="middle" dominantBaseline="central"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-        fill={color} fontSize="22" fontWeight="800" fontFamily="Inter, sans-serif">{score}</motion.text>
+        fill={color} fontSize="22" fontWeight="800" fontFamily="Inter, sans-serif">{displayScore}</motion.text>
     </motion.svg>
   )
 }
@@ -359,9 +360,9 @@ export default function InterviewMode({ sessionId, questions, onComplete, onRese
                     <div className="flex-1">
                       <div className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-1">Your Score</div>
                       <div className="flex items-center gap-3 mb-2">
-                        <span className="text-2xl font-black" style={{ color: scoreColor(evalResult.score) }}>{evalResult.score}/10</span>
+                        <span className="text-2xl font-black" style={{ color: scoreColor(evalResult.score ?? 0) }}>{(evalResult.score ?? 0)}/10</span>
                         <span className="text-base">{label?.icon}</span>
-                        <span className="font-bold text-sm" style={{ color: scoreColor(evalResult.score) }}>{label?.text}</span>
+                        <span className="font-bold text-sm" style={{ color: scoreColor(evalResult.score ?? 0) }}>{label?.text}</span>
                       </div>
                       {evalResult.is_bluffing && (
                         <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 15 }}
@@ -377,11 +378,11 @@ export default function InterviewMode({ sessionId, questions, onComplete, onRese
                     </div>
                   )}
                   <div className="mt-4 score-bar">
-                    <motion.div className="h-full rounded-full" initial={{ width: 0 }} animate={{ width: `${evalResult.score * 10}%` }}
+                    <motion.div className="h-full rounded-full" initial={{ width: 0 }} animate={{ width: `${(evalResult.score ?? 0) * 10}%` }}
                       transition={{ duration: 1.2, ease: [0.25,1,0.5,1], delay: 0.3 }}
                       style={{
-                        background: evalResult.score >= 8 ? 'linear-gradient(90deg, #166534, #4ade80)' : evalResult.score >= 5 ? 'linear-gradient(90deg, #92400e, #fbbf24)' : 'linear-gradient(90deg, #7f1d1d, #f87171)',
-                        boxShadow: `0 0 10px ${scoreColor(evalResult.score)}50`,
+                        background: (evalResult.score ?? 0) >= 8 ? 'linear-gradient(90deg, #166534, #4ade80)' : (evalResult.score ?? 0) >= 5 ? 'linear-gradient(90deg, #92400e, #fbbf24)' : 'linear-gradient(90deg, #7f1d1d, #f87171)',
+                        boxShadow: `0 0 10px ${scoreColor(evalResult.score ?? 0)}50`,
                       }} />
                   </div>
                 </div>
@@ -390,13 +391,13 @@ export default function InterviewMode({ sessionId, questions, onComplete, onRese
                 <div className="glass-orange rounded-2xl p-5 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(90deg, #ff4500, #ff8c00, transparent)' }} />
                   <div className="text-xs text-[#ff4500] font-bold uppercase tracking-widest mb-3">🔥 Roast</div>
-                  <p className="text-[#ff8c00] font-mono text-sm leading-relaxed">"{evalResult.mini_roast}"</p>
+                  <p className="text-[#ff8c00] font-mono text-sm leading-relaxed">"{evalResult.mini_roast || "Even my AI brain is speechless at this one..."}"</p>
                 </div>
 
                 {/* Feedback */}
                 <div className="card">
                   <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-3">💡 Feedback</div>
-                  <p className="text-gray-300 text-sm leading-relaxed">{evalResult.feedback}</p>
+                  <p className="text-gray-300 text-sm leading-relaxed">{evalResult.feedback || "The AI evaluator didn't have much to say. Maybe try a more detailed answer next time?"}</p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
                     {evalResult.approach_rating && (
                       <span style={{
