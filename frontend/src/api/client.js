@@ -8,7 +8,16 @@ const api = axios.create({
 api.interceptors.response.use(
   (res) => res.data,
   (err) => {
+    const status = err.response?.status
     const message = err.response?.data?.detail || err.message || 'Something went wrong'
+    
+    // Auto-recovery for Session Not Found (happens after backend restart/deploy)
+    if (status === 404 && (message.toLowerCase().includes('session') || message.toLowerCase().includes('not found'))) {
+      localStorage.removeItem('devroast_session')
+      window.location.href = '/' // Bounce back to start
+      return new Promise(() => {}) // Stop promise chain
+    }
+
     return Promise.reject(new Error(message))
   }
 )
