@@ -361,7 +361,7 @@ export default function Landing({ onStart }) {
             </p>
             
             <p style={{ fontSize: '16px', color: '#9ca3af', lineHeight: 1.7, marginTop: '24px', maxWidth: '640px', margin: '24px auto 0' }}>
-              We're at 22,000 on Instagram. When we hit 50,000 — we drop <strong>Roasted Resume</strong>.
+              We're at 23,000 on Instagram. When we hit 50,000 — we drop <strong>Roasted Resume</strong>.
               <br /><br />
               An AI that doesn't just review your resume. It rebuilds it — to FAANG acceptance standards. Role-specific. ATS-optimized. Brutally honest. The kind of feedback that used to cost ₹10,000 from a senior engineer.
               <br /><br />
@@ -371,13 +371,13 @@ export default function Landing({ onStart }) {
             {/* Progress Area */}
             <div style={{ marginTop: '48px', maxWidth: '500px', margin: '48px auto 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>🔥 22,000 / 50,000 followers</span>
-                <span style={{ fontSize: '12px', color: '#ff6b35', fontWeight: 800 }}>44% TO UNLOCK</span>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>🔥 23,000 / 50,000 followers</span>
+                <span style={{ fontSize: '12px', color: '#ff6b35', fontWeight: 800 }}>46% TO UNLOCK</span>
               </div>
               <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '99px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <motion.div 
                   initial={{ width: 0 }} 
-                  whileInView={{ width: '44%' }} 
+                  whileInView={{ width: '46%' }} 
                   viewport={{ once: true }}
                   transition={{ duration: 1.5, ease: 'easeOut', delay: 0.5 }}
                   style={{ height: '100%', background: 'linear-gradient(90deg, #ff4500, #ff8c00, #ffd700)', boxShadow: '0 0 15px rgba(255,69,0,0.5)' }} 
@@ -391,7 +391,7 @@ export default function Landing({ onStart }) {
             {/* CTA Button */}
             <motion.div style={{ marginTop: '40px' }} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
               <a 
-                href="https://www.instagram.com/webarania.ai/" 
+                href="https://www.instagram.com/webarania.wand/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{ 
@@ -400,7 +400,7 @@ export default function Landing({ onStart }) {
                   boxShadow: '0 0 30px rgba(255,255,255,0.1)'
                 }}
               >
-                → Follow @webarania.ai and unlock this
+                → Follow @webarania.wand and unlock this
               </a>
               <p style={{ fontSize: '11px', color: '#4b5563', marginTop: '16px' }}>
                 Every follow brings this closer. Tell one developer friend. That's it.
