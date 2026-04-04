@@ -108,14 +108,35 @@ async def start_interview(request: Request, req: StartInterviewRequest):
 @router.post("/evaluate")
 @limiter.limit("10/minute")
 async def evaluate(request: Request, req: EvaluateAnswerRequest):
-    """Evaluate a single interview answer."""
+    """Evaluate a single interview answer (MCQ or Scenario)."""
     session = _get_session_or_404(req.session_id)
-
-    try:
-        result = await evaluate_answer(req.question_text, req.skill_tested, req.answer)
-    except Exception as e:
-        logger.error(f"Evaluation error: {e}")
-        raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
+    questions = session.get("questions", [])
+    
+    # Find the question in session
+    q_data = next((q for q in questions if str(q.get("id")) == str(req.question_id)), None)
+    
+    # Handle MCQ evaluation locally
+    if q_data and q_data.get("type") == "mcq":
+        correct = q_data.get("correct_answer")
+        is_correct = str(req.answer).strip().lower() == str(correct).strip().lower()
+        
+        result = {
+            "score": 10 if is_correct else 0,
+            "mini_roast": "Nailed it! 🎯" if is_correct else f"Wrong! The correct answer was: {correct}. 🤡",
+            "is_bluffing": False,
+            "feedback": "Perfect technical knowledge." if is_correct else "Need to brush up on your basics.",
+            "approach_rating": "strong" if is_correct else "weak",
+            "key_missing": None if is_correct else f"Correct answer: {correct}"
+        }
+    else:
+        # Scenario evaluation via AI
+        try:
+            result = await evaluate_answer(req.question_text, req.skill_tested, req.answer)
+        except Exception as e:
+            logger.error(f"Evaluation error: {e}")
+            if isinstance(e, HTTPException) and e.status_code == 429:
+                raise
+            raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
 
     # Store evaluation
     evaluations = session.get("evaluations", [])

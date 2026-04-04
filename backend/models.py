@@ -31,7 +31,7 @@ class StartInterviewRequest(BaseModel):
 
 
 class Question(BaseModel):
-    id: int
+    id: Any
     text: str
     skill_tested: str
     difficulty: str = "medium"
@@ -43,7 +43,7 @@ class InterviewQuestionsResponse(BaseModel):
 
 class EvaluateAnswerRequest(BaseModel):
     session_id: str
-    question_id: int
+    question_id: Any
     question_text: str
     skill_tested: str
     answer: str
