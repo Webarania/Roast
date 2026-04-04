@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getLeaderboard } from '../api/client'
+import axios from 'axios'
 
 const SAMPLE_ROASTS = [
   { text: 'Your React skills are like your commit history — empty.', author: 'Dev Roast AI on a "React Expert"' },
@@ -89,6 +90,8 @@ export default function Landing({ onStart }) {
   }, [])
 
   useEffect(() => {
+    // Wake up Render backend immediately
+    axios.get('https://roast-7n43.onrender.com/health').catch(() => {})
     getLeaderboard(5).then(d => setLeaderboard(d.entries || [])).catch(() => {})
   }, [])
 

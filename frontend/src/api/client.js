@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: 'https://roast-7n43.onrender.com/api',
-  timeout: 30000,
+  timeout: 60000,
 })
 
 api.interceptors.response.use(
