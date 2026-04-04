@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional, List
 
 import httpx
 import google.generativeai as genai
+from fastapi import HTTPException
 
 from config import (
     GROQ_API_KEY,
@@ -47,14 +48,21 @@ async def call_groq(prompt: str, system: str = "", timeout: float = 15.0) -> str
     }
 
     async with httpx.AsyncClient(timeout=timeout) as client:
-        resp = await client.post(
-            f"{GROQ_BASE_URL}/chat/completions",
-            json=payload,
-            headers=headers,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        return data["choices"][0]["message"]["content"]
+        try:
+            resp = await client.post(
+                f"{GROQ_BASE_URL}/chat/completions",
+                json=payload,
+                headers=headers,
+            )
+            if resp.status_code == 429:
+                raise HTTPException(status_code=429, detail="Groq API limit reached. Try again in a minute.")
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"]
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                raise HTTPException(status_code=429, detail="Too many requests to AI. Please slow down.")
+            raise
 
 async def call_gemini(prompt: str, system: str = "", timeout: float = 15.0) -> str:
     """Call Google Gemini API asynchronously."""
@@ -66,14 +74,19 @@ async def call_gemini(prompt: str, system: str = "", timeout: float = 15.0) -> s
         system_instruction=system if system else None
     )
     
-    response = await model.generate_content_async(
-        prompt,
-        generation_config=genai.types.GenerationConfig(
-            temperature=0.7,
-            max_output_tokens=1024,
+    try:
+        response = await model.generate_content_async(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.7,
+                max_output_tokens=1024,
+            )
         )
-    )
-    return response.text
+        return response.text
+    except Exception as e:
+        if "429" in str(e) or "ResourceExhausted" in str(e):
+            raise HTTPException(status_code=429, detail="Gemini API limit reached. Try again in a minute.")
+        raise
 
 async def ai_call(prompt: str, system: str = "", timeout: float = 15.0) -> str:
     """Unified AI call with fallback: Groq -> Gemini."""
@@ -83,6 +96,11 @@ async def ai_call(prompt: str, system: str = "", timeout: float = 15.0) -> str:
     if GROQ_API_KEY:
         try:
             return await call_groq(prompt, system, timeout)
+        except HTTPException as e:
+            if e.status_code == 429:
+                logger.warning("Groq rate limited, trying Gemini fallback...")
+            else:
+                errors.append(f"Groq: {str(e.detail)}")
         except Exception as e:
             logger.warning(f"Groq call failed, trying Gemini fallback: {e}")
             errors.append(f"Groq: {str(e)}")
@@ -91,10 +109,17 @@ async def ai_call(prompt: str, system: str = "", timeout: float = 15.0) -> str:
     if GEMINI_API_KEY:
         try:
             return await call_gemini(prompt, system, timeout)
+        except HTTPException as e:
+            if e.status_code == 429:
+                raise # Pass through 429
+            errors.append(f"Gemini: {str(e.detail)}")
         except Exception as e:
             logger.error(f"Gemini call failed: {e}")
             errors.append(f"Gemini: {str(e)}")
             
+    if any("429" in str(err) for err in errors):
+        raise HTTPException(status_code=429, detail="AI Service is currently overloaded. Please wait a moment.")
+        
     raise RuntimeError(f"All AI providers failed or none configured. Errors: {'; '.join(errors)}")
 
 def extract_json(text: str) -> Any:
@@ -157,11 +182,13 @@ def safe_join(items: Any, sep: str = ", ") -> str:
 async def parse_resume(resume_text: str) -> Dict:
     prompt = f"""
     Extract structured technical info from this resume text.
+    Also VALIDATE if this is a real tech/developer resume.
     Resume:
     {resume_text[:4000]}
 
     Return ONLY valid JSON with this structure:
     {{
+      "is_tech_resume": true|false,
       "name": "Developer Name",
       "job_title": "Current Role",
       "domain": "e.g. Frontend, Backend",
@@ -215,6 +242,28 @@ async def generate_questions(resume_data: dict, count: int = 5, intensity: str =
     ]
     """
     raw = await ai_call(prompt, system="Senior tech interviewer. Scenario-based only. Return JSON array.", timeout=20.0)
+    return extract_json(raw)
+
+async def generate_mcqs(resume_data: dict, count: int = 5) -> list:
+    """Generate multiple choice questions based on the resume skills."""
+    prompt = f"""
+    Generate {count} technical Multiple Choice Questions (MCQs) for this dev.
+    Skills: {safe_join(resume_data.get('skills'))}
+    
+    Return ONLY valid JSON array:
+    [
+      {{
+        "id": "mcq_1",
+        "type": "mcq",
+        "text": "The question text?",
+        "options": ["Option A", "Option B", "Option C", "Option D"],
+        "correct_answer": "Option A",
+        "skill_tested": "React",
+        "difficulty": "medium"
+      }}
+    ]
+    """
+    raw = await ai_call(prompt, system="MCQ Generator. Return JSON array. Each question must have 4 options and one correct_answer.", timeout=20.0)
     return extract_json(raw)
 
 async def evaluate_answer(question: str, skill: str, answer: str) -> Dict:

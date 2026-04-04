@@ -336,30 +336,65 @@ export default function InterviewMode({ sessionId, questions, onComplete, onRese
                 </AnimatePresence>
 
                 <div className="relative">
-                  <textarea 
-                    value={answer} 
-                    onChange={e => setAnswer(e.target.value)} 
-                    onPaste={e => e.preventDefault()}
-                    disabled={evaluating}
-                    placeholder="Type your answer... Think through the problem step by step."
-                    rows={6}
-                    className="w-full rounded-xl p-4 text-white placeholder-gray-600 font-mono text-sm resize-none transition-all duration-200 disabled:opacity-50 focus:outline-none"
-                    style={{
-                      background: 'rgba(8,8,8,0.95)',
-                      border: answer.length > 20 ? '1px solid rgba(74,222,128,0.3)' : answer.length > 0 ? '1px solid rgba(251,191,36,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                    }} />
-                  <div className="absolute bottom-3 right-3 flex items-center gap-3">
-                    <button 
-                      type="button"
-                      onClick={toggleSpeechMain}
-                      className={`p-2 rounded-lg transition-all ${isListeningMain ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-white/5 text-gray-400 hover:text-white'}`}
-                      title="Voice to Text"
-                    >
-                      {isListeningMain ? '🛑' : '🎤'}
-                    </button>
-                    {answer.length > 0 && answer.length < 20 && <span className="text-xs text-yellow-500 font-mono">⚠️ too short</span>}
-                    <span className="text-xs text-gray-600 font-mono">{answer.length}</span>
-                  </div>
+                  {current.type === 'mcq' ? (
+                    <div className="space-y-3">
+                      {current.options?.map((opt, i) => (
+                        <motion.button
+                          key={i}
+                          whileHover={{ scale: 1.01, background: 'rgba(255,255,255,0.05)' }}
+                          whileTap={{ scale: 0.99 }}
+                          onClick={() => {
+                            setAnswer(opt)
+                            // Auto submit MCQ
+                            setTimeout(() => {
+                              const submitBtn = document.getElementById('submit-btn')
+                              if (submitBtn) submitBtn.click()
+                            }, 100)
+                          }}
+                          disabled={evaluating}
+                          className={`w-full text-left p-4 rounded-xl font-medium transition-all border ${
+                            answer === opt ? 'border-[#ff4500] bg-[#ff4500]/10 text-white' : 'border-white/10 bg-white/5 text-gray-400 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border ${
+                              answer === opt ? 'bg-[#ff4500] border-[#ff4500] text-black' : 'border-white/20'
+                            }`}>
+                              {String.fromCharCode(65 + i)}
+                            </span>
+                            {opt}
+                          </div>
+                        </motion.button>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <textarea 
+                        value={answer} 
+                        onChange={e => setAnswer(e.target.value)} 
+                        onPaste={e => e.preventDefault()}
+                        disabled={evaluating}
+                        placeholder="Type your answer... Think through the problem step by step."
+                        rows={6}
+                        className="w-full rounded-xl p-4 text-white placeholder-gray-600 font-mono text-sm resize-none transition-all duration-200 disabled:opacity-50 focus:outline-none"
+                        style={{
+                          background: 'rgba(8,8,8,0.95)',
+                          border: answer.length > 20 ? '1px solid rgba(74,222,128,0.3)' : answer.length > 0 ? '1px solid rgba(251,191,36,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                        }} />
+                      <div className="absolute bottom-3 right-3 flex items-center gap-3">
+                        <button 
+                          type="button"
+                          onClick={toggleSpeechMain}
+                          className={`p-2 rounded-lg transition-all ${isListeningMain ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-white/5 text-gray-400 hover:text-white'}`}
+                          title="Voice to Text"
+                        >
+                          {isListeningMain ? '🛑' : '🎤'}
+                        </button>
+                        {answer.length > 0 && answer.length < 20 && <span className="text-xs text-yellow-500 font-mono">⚠️ too short</span>}
+                        <span className="text-xs text-gray-600 font-mono">{answer.length}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {error && (
@@ -388,6 +423,7 @@ export default function InterviewMode({ sessionId, questions, onComplete, onRese
 
                   {/* Submit Button */}
                   <motion.button
+                    id="submit-btn"
                     whileHover={!evaluating ? { scale: 1.02 } : {}}
                     whileTap={!evaluating ? { scale: 0.98 } : {}}
                     onClick={handleSubmit}

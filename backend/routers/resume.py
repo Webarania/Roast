@@ -50,25 +50,34 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
             status_code=400, detail="PDF appears to be empty or contains no readable text"
         )
 
-    # Check if it looks like a tech resume
-    tech_keywords = [
-        "python", "javascript", "java", "react", "node", "sql", "api",
-        "developer", "engineer", "software", "programming", "code", "git",
-        "html", "css", "database", "framework", "backend", "frontend", "fullstack",
-    ]
-    text_lower = pdf_text.lower()
-    if not any(kw in text_lower for kw in tech_keywords):
-        raise HTTPException(
-            status_code=400,
-            detail="This doesn't look like a tech resume. Please upload a developer resume.",
-        )
-
     # Parse resume with AI
     try:
         parsed = await parse_resume(pdf_text)
+        
+        # Stricter tech validation using AI's judgment
+        if parsed.get("is_tech_resume") is False:
+            raise HTTPException(
+                status_code=400,
+                detail="This doesn't look like a technical/developer resume. Please upload a relevant resume to get roasted properly."
+            )
+            
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"AI parsing error: {e}")
-        # Fallback: create basic structure from text
+        # Fallback keyword check if AI fails
+        tech_keywords = [
+            "python", "javascript", "java", "react", "node", "sql", "api",
+            "developer", "engineer", "software", "programming", "code", "git",
+            "html", "css", "database", "framework", "backend", "frontend", "fullstack",
+        ]
+        text_lower = pdf_text.lower()
+        if not any(kw in text_lower for kw in tech_keywords):
+            raise HTTPException(
+                status_code=400,
+                detail="This doesn't look like a tech resume. Please upload a developer resume.",
+            )
+        
         parsed = {
             "name": "Developer",
             "skills": [],

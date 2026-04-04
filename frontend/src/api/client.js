@@ -18,6 +18,12 @@ api.interceptors.response.use(
       return new Promise(() => {}) // Stop promise chain
     }
 
+    // Rate limit handling
+    if (status === 429) {
+      alert("🔥 Too many roasts! Our AI is on fire. Please wait a minute before trying again.")
+      return new Promise(() => {})
+    }
+
     return Promise.reject(new Error(message))
   }
 )
