@@ -70,6 +70,10 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
             "python", "javascript", "java", "react", "node", "sql", "api",
             "developer", "engineer", "software", "programming", "code", "git",
             "html", "css", "database", "framework", "backend", "frontend", "fullstack",
+            "devops", "kubernetes", "docker", "aws", "azure", "gcp", "terraform", "jenkins",
+            "sap", "abap", "hana", "fiori", "oracle", "plsql", "dba", "db analyst", "data analyst",
+            "ml", "ai", "artificial intelligence", "machine learning", "pytorch", "tensorflow",
+            "cybersecurity", "security", "network", "system admin", "linux", "unix", "cloud",
         ]
         text_lower = pdf_text.lower()
         if not any(kw in text_lower for kw in tech_keywords):

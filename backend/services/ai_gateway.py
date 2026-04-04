@@ -182,7 +182,12 @@ def safe_join(items: Any, sep: str = ", ") -> str:
 async def parse_resume(resume_text: str) -> Dict:
     prompt = f"""
     Extract structured technical info from this resume text.
-    Also VALIDATE if this is a real tech/developer resume.
+    Also VALIDATE if this is a real tech/IT/developer resume.
+    
+    Acceptable domains include: Software Development, DevOps, Cloud Engineering, 
+    SAP/ERP (ABAP, HANA, etc.), Oracle/DBA, Data Science (AI/ML), 
+    Cybersecurity, Systems Administration, and general IT roles.
+
     Resume:
     {resume_text[:4000]}
 
@@ -190,27 +195,33 @@ async def parse_resume(resume_text: str) -> Dict:
     {{
       "is_tech_resume": true|false,
       "name": "Developer Name",
-      "job_title": "Current Role",
-      "domain": "e.g. Frontend, Backend",
-      "skills": ["Python", "React"],
+      "job_title": "Current Role (e.g. DevOps Lead, SAP Consultant)",
+      "domain": "Primary domain",
+      "skills": ["Skill1", "Skill2"],
       "projects": [{{"name": "P1", "description": "...", "tech_stack": ["Node"]}}],
       "experience_level": "junior|mid|senior",
       "years_of_experience": 3
     }}
     """
-    raw = await ai_call(prompt, system="Technical resume parser. Return only valid JSON.", timeout=20.0)
+    raw = await ai_call(prompt, system="Technical resume parser for all IT domains. Return only valid JSON.", timeout=20.0)
     return extract_json(raw)
 
 async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -> Dict:
     style = "gentle teasing" if intensity == "mild" else "absolutely brutal, career-ending, and deeply insulting honesty" if intensity == "savage" else "sarcastic and witty"
     
     prompt = f"""
-    Roast this dev resume. Tone: {style}.
+    Roast this tech professional's resume. Tone: {style}.
+    Role: {resume_data.get('job_title')}
     Name: {resume_data.get('name')}
     Skills: {safe_join(resume_data.get('skills'))}
     Experience: {resume_data.get('experience_level')}
     
-    IMPORTANT: If savage, be heartless. Tell them they are not eligible for MNCs, only for tiny startups or maybe a primary school teacher role. Question their existence as a developer.
+    IMPORTANT: If savage, be heartless. Customize the roast to their specific domain:
+    - For DevOps: Mock their yaml files and "infinite" pipelines that just crash.
+    - For SAP/Oracle: Roast their ancient tech stack and boring enterprise lifestyle.
+    - For AI/ML: Mock them for being just "wrapper" developers or using basic prompts.
+    - For DB Analysts: Joke about how they are just Excel experts with a complex.
+    - General: Tell them they aren't eligible for MNCs and should stick to primary school teaching.
 
     Return ONLY valid JSON:
     {{
@@ -220,7 +231,7 @@ async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -
       "red_flags": ["flag1"]
     }}
     """
-    raw = await ai_call(prompt, system="Brutally funny and mean tech interviewer. You have no filter. Return JSON.", timeout=15.0)
+    raw = await ai_call(prompt, system="Brutally funny and mean tech industry interviewer. You roast all IT roles without mercy. Return JSON.", timeout=15.0)
     return extract_json(raw)
 
 async def generate_questions(resume_data: dict, count: int = 5, intensity: str = "medium") -> list:
