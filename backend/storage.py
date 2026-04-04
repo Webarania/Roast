@@ -1,60 +1,49 @@
 import uuid
-import json
-import os
 import logging
+import os
 from datetime import datetime
 from typing import Dict, List, Optional
+import pymongo
+
+from config import MONGODB_URI
 
 logger = logging.getLogger(__name__)
 
-# Persistence paths
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
-SESSIONS_FILE = os.path.join(DATA_DIR, "sessions.json")
-LEADERBOARD_FILE = os.path.join(DATA_DIR, "leaderboard.json")
-SHARE_FILE = os.path.join(DATA_DIR, "shares.json")
+# Fallback to in-memory if no URI provided
+USE_MONGO = bool(MONGODB_URI.strip())
 
-# Ensure data dir exists
-os.makedirs(DATA_DIR, exist_ok=True)
-
-# In-memory stores
-sessions: Dict[str, dict] = {}
-leaderboard: List[dict] = []
-share_store: Dict[str, dict] = {}
-
-def load_data():
-    global sessions, leaderboard, share_store
+# Initialize MongoDB if URI exists
+if USE_MONGO:
     try:
-        if os.path.exists(SESSIONS_FILE):
-            with open(SESSIONS_FILE, "r") as f:
-                sessions = json.load(f)
-        if os.path.exists(LEADERBOARD_FILE):
-            with open(LEADERBOARD_FILE, "r") as f:
-                leaderboard = json.load(f)
-        if os.path.exists(SHARE_FILE):
-            with open(SHARE_FILE, "r") as f:
-                share_store = json.load(f)
-        logger.info(f"Data loaded: {len(sessions)} sessions, {len(leaderboard)} leaderboard entries")
+        client = pymongo.MongoClient(MONGODB_URI)
+        db = client.get_database("devroast")
+        sessions_col = db.get_collection("sessions")
+        leaderboard_col = db.get_collection("leaderboard")
+        shares_col = db.get_collection("shares")
+        
+        # Ensure indexes for performance
+        leaderboard_col.create_index("score", direction=pymongo.DESCENDING)
+        leaderboard_col.create_index("session_id", unique=True)
+        sessions_col.create_index("created_at")
+        shares_col.create_index("created_at")
+        
+        logger.info("🟢 Successfully connected to MongoDB Atlas!")
     except Exception as e:
-        logger.error(f"Error loading data: {e}")
+        logger.error(f"Failed to connect to MongoDB: {e}")
+        USE_MONGO = False
 
-def save_data():
-    try:
-        with open(SESSIONS_FILE, "w") as f:
-            json.dump(sessions, f)
-        with open(LEADERBOARD_FILE, "w") as f:
-            json.dump(leaderboard, f)
-        with open(SHARE_FILE, "w") as f:
-            json.dump(share_store, f)
-    except Exception as e:
-        logger.error(f"Error saving data: {e}")
-
-# Load data on startup
-load_data()
+# Fallback In-memory stores
+if not USE_MONGO:
+    logger.warning("🟡 No valid MONGODB_URI provided. Using in-memory fallback storage. Data will reset on restart.")
+    _sessions: Dict[str, dict] = {}
+    _leaderboard: List[dict] = []
+    _share_store: Dict[str, dict] = {}
 
 def create_session() -> str:
     session_id = str(uuid.uuid4())
-    sessions[session_id] = {
-        "id": session_id,
+    session_data = {
+        "_id": session_id, # Use _id for MongoDB
+        "id": session_id,  # Keep id for frontend compatibility
         "created_at": datetime.utcnow().isoformat(),
         "resume_data": None,
         "initial_roast": None,
@@ -63,84 +52,129 @@ def create_session() -> str:
         "intensity": "medium",
         "final_result": None,
     }
-    save_data()
+    
+    if USE_MONGO:
+        sessions_col.insert_one(session_data)
+    else:
+        # Remove _id before storing in memory
+        mem_data = dict(session_data)
+        mem_data.pop("_id", None)
+        _sessions[session_id] = mem_data
+        
     return session_id
 
-
 def get_session(session_id: str) -> Optional[dict]:
-    return sessions.get(session_id)
-
+    if USE_MONGO:
+        doc = sessions_col.find_one({"_id": session_id})
+        if doc:
+            doc.pop("_id", None) # Clean up internal ID before returning
+        return doc
+    return _sessions.get(session_id)
 
 def update_session(session_id: str, key: str, value) -> bool:
-    if session_id not in sessions:
+    if USE_MONGO:
+        result = sessions_col.update_one({"_id": session_id}, {"$set": {key: value}})
+        return result.modified_count > 0
+    
+    if session_id not in _sessions:
         return False
-    sessions[session_id][key] = value
-    save_data()
+    _sessions[session_id][key] = value
     return True
 
-
 def add_to_leaderboard(entry: dict) -> int:
-    # Check if session already exists on leaderboard
-    for i, e in enumerate(leaderboard):
-        if e["session_id"] == entry["session_id"]:
-            leaderboard[i] = entry
-            leaderboard.sort(key=lambda x: x["score"], reverse=True)
-            save_data()
-            return next(i for i, e in enumerate(leaderboard) if e["session_id"] == entry["session_id"]) + 1
+    if USE_MONGO:
+        # Upsert the entry
+        leaderboard_col.update_one(
+            {"session_id": entry["session_id"]},
+            {"$set": entry},
+            upsert=True
+        )
+        # Calculate rank by counting how many docs have a higher score
+        higher_scores = leaderboard_col.count_documents({"score": {"$gt": entry["score"]}})
+        return higher_scores + 1
+    else:
+        for i, e in enumerate(_leaderboard):
+            if e["session_id"] == entry["session_id"]:
+                _leaderboard[i] = entry
+                _leaderboard.sort(key=lambda x: x["score"], reverse=True)
+                return next(i for i, e in enumerate(_leaderboard) if e["session_id"] == entry["session_id"]) + 1
 
-    leaderboard.append(entry)
-    leaderboard.sort(key=lambda x: x["score"], reverse=True)
-    save_data()
-    return next(i for i, e in enumerate(leaderboard) if e["session_id"] == entry["session_id"]) + 1
-
+        _leaderboard.append(entry)
+        _leaderboard.sort(key=lambda x: x["score"], reverse=True)
+        return next(i for i, e in enumerate(_leaderboard) if e["session_id"] == entry["session_id"]) + 1
 
 def get_leaderboard(limit: int = 50, offset: int = 0) -> List[dict]:
-    return leaderboard[offset:offset + limit]
-
+    if USE_MONGO:
+        docs = list(leaderboard_col.find({}, {"_id": 0}).sort("score", pymongo.DESCENDING).skip(offset).limit(limit))
+        return docs
+    return _leaderboard[offset:offset + limit]
 
 def get_user_rank(session_id: str) -> int:
-    for i, e in enumerate(leaderboard):
-        if e["session_id"] == session_id:
-            return i + 1
-    return -1
-
+    if USE_MONGO:
+        user_doc = leaderboard_col.find_one({"session_id": session_id})
+        if not user_doc:
+            return -1
+        higher_scores = leaderboard_col.count_documents({"score": {"$gt": user_doc["score"]}})
+        return higher_scores + 1
+    else:
+        for i, e in enumerate(_leaderboard):
+            if e["session_id"] == session_id:
+                return i + 1
+        return -1
 
 def create_share(session_id: str, data: dict) -> str:
     share_id = str(uuid.uuid4())[:8]
-    share_store[share_id] = {
+    share_data = {
+        "_id": share_id,
         "session_id": session_id,
         "data": data,
         "created_at": datetime.utcnow().isoformat(),
     }
-    save_data()
+    
+    if USE_MONGO:
+        shares_col.insert_one(share_data)
+    else:
+        mem_data = dict(share_data)
+        mem_data.pop("_id", None)
+        _share_store[share_id] = mem_data
     return share_id
 
-
 def get_share(share_id: str) -> Optional[dict]:
-    return share_store.get(share_id)
-
+    if USE_MONGO:
+        doc = shares_col.find_one({"_id": share_id})
+        if doc:
+            doc.pop("_id", None)
+        return doc
+    return _share_store.get(share_id)
 
 def cleanup_old_sessions(max_age_hours: int = 2) -> int:
-    """Remove sessions older than max_age_hours. Returns count of removed sessions."""
-    now = datetime.utcnow()
-    to_remove = []
-    for sid, session in sessions.items():
-        try:
-            created = datetime.fromisoformat(session["created_at"])
-            if (now - created).total_seconds() > max_age_hours * 3600:
-                to_remove.append(sid)
-        except:
-            pass
-    for sid in to_remove:
-        del sessions[sid]
-    if to_remove:
-        save_data()
-    return len(to_remove)
-
+    import datetime as dt
+    cutoff = dt.datetime.utcnow() - dt.timedelta(hours=max_age_hours)
+    cutoff_iso = cutoff.isoformat()
+    
+    if USE_MONGO:
+        result = sessions_col.delete_many({"created_at": {"$lt": cutoff_iso}})
+        return result.deleted_count
+    else:
+        now = datetime.utcnow()
+        to_remove = []
+        for sid, session in _sessions.items():
+            try:
+                created = datetime.fromisoformat(session["created_at"])
+                if (now - created).total_seconds() > max_age_hours * 3600:
+                    to_remove.append(sid)
+            except:
+                pass
+        for sid in to_remove:
+            del _sessions[sid]
+        return len(to_remove)
 
 def get_session_count() -> int:
-    return len(sessions)
-
+    if USE_MONGO:
+        return sessions_col.count_documents({})
+    return len(_sessions)
 
 def get_leaderboard_count() -> int:
-    return len(leaderboard)
+    if USE_MONGO:
+        return leaderboard_col.count_documents({})
+    return len(_leaderboard)
