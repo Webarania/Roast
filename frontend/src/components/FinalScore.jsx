@@ -124,6 +124,7 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
   const [submitted,   setSubmitted]   = useState(false)
   const [rank,        setRank]        = useState(null)
   const [shareText,   setShareText]   = useState('')
+  const [shareUrl,    setShareUrl]    = useState('')
   const [copied,      setCopied]      = useState(false)
 
   useEffect(() => {
@@ -168,6 +169,7 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
     try {
       const data = await generateShare(sessionId, displayName || resumeData?.name || 'Dev')
       setShareText(data.share_text)
+      setShareUrl(data.share_url)
     } catch (err) {
       setError(err.message)
     }
@@ -181,11 +183,21 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
 
   const shareToTwitter  = () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank')
   const shareToLinkedIn = () => {
-    // LinkedIn doesn't support 'text' param in their basic share-offsite URL, 
-    // it only scrapes the URL. To get text, we need to use 'summary' or just suggest copying the text first.
-    // For now, we'll try to include the URL and prompt the user to paste.
-    const url = window.location.origin
+    // Use the specific shareable URL
+    const url = shareUrl || window.location.href
     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank')
+  }
+
+  const shareToInstagram = () => {
+    // Copy the roast text to clipboard first
+    navigator.clipboard.writeText(shareText)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+    
+    // Direct Instagram Story sharing from web is not supported by Meta.
+    // We notify the user and open Instagram.
+    alert("Roast text copied! Instagram doesn't allow direct story sharing from web browsers. \n\nOpening Instagram... you can paste your results into your Story or Bio!")
+    window.open(`https://www.instagram.com/`, '_blank')
   }
 
   /* ── Loading ── */
@@ -521,6 +533,14 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
                   className="btn-secondary text-sm px-4 py-2.5 flex-1 flex items-center justify-center gap-2"
                 >
                   in LinkedIn
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={shareToInstagram}
+                  className="btn-secondary text-sm px-4 py-2.5 flex-1 flex items-center justify-center gap-2"
+                >
+                  📸 Instagram
                 </motion.button>
               </div>
             </motion.div>
