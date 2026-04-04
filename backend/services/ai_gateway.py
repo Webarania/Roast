@@ -175,7 +175,7 @@ async def parse_resume(resume_text: str) -> Dict:
     return extract_json(raw)
 
 async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -> Dict:
-    style = "gentle teasing" if intensity == "mild" else "brutal and unforgiving" if intensity == "savage" else "sarcastic and witty"
+    style = "gentle teasing" if intensity == "mild" else "absolutely brutal, career-ending, and deeply insulting honesty" if intensity == "savage" else "sarcastic and witty"
     
     prompt = f"""
     Roast this dev resume. Tone: {style}.
@@ -183,6 +183,8 @@ async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -
     Skills: {safe_join(resume_data.get('skills'))}
     Experience: {resume_data.get('experience_level')}
     
+    IMPORTANT: If savage, be heartless. Tell them they are not eligible for MNCs, only for tiny startups or maybe a primary school teacher role. Question their existence as a developer.
+
     Return ONLY valid JSON:
     {{
       "roast": "Brutal 2-4 line verdict",
@@ -191,7 +193,7 @@ async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -
       "red_flags": ["flag1"]
     }}
     """
-    raw = await ai_call(prompt, system="Brutally funny tech interviewer. Return JSON.", timeout=15.0)
+    raw = await ai_call(prompt, system="Brutally funny and mean tech interviewer. You have no filter. Return JSON.", timeout=15.0)
     return extract_json(raw)
 
 async def generate_questions(resume_data: dict, count: int = 5, intensity: str = "medium") -> list:
@@ -250,12 +252,16 @@ async def evaluate_answer(question: str, skill: str, answer: str) -> Dict:
 async def generate_final_roast(session: dict) -> Dict:
     evals = session.get("evaluations", [])
     avg = sum(e.get("score", 0) for e in evals) / len(evals) if evals else 0
-    
+    intensity = session.get("intensity", "medium")
+
     prompt = f"""
     Generate the final verdict for {session.get('resume_data', {}).get('name')}.
     Avg Score: {avg}/10. 
     Summary: {safe_join([f"Q: {e.get('skill')} (Score: {e.get('score')}/10)" for e in evals])}
-    
+    Intensity: {intensity}
+
+    If intensity is savage, be absolutely devastating. Use comparisons like 'You're not built for an MNC', 'Try applying for a school teacher job', or 'A calculator has more logic than you'. Question their degree and career choices.
+
     Return ONLY valid JSON:
     {{
       "final_roast": "Final 3-5 line brutal paragraph",
@@ -263,7 +269,7 @@ async def generate_final_roast(session: dict) -> Dict:
       "verdict": "One-line summary"
     }}
     """
-    raw = await ai_call(prompt, system="Final roast verdict mode. Return JSON.", timeout=15.0)
+    raw = await ai_call(prompt, system="Final roast verdict mode. Max savagery and mean-spirited honesty. Return JSON.", timeout=15.0)
     return extract_json(raw)
 
 async def generate_hint(question: str, skill: str, partial_answer: str, hint_number: int = 1) -> Dict:

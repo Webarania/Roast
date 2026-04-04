@@ -180,7 +180,13 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
   }
 
   const shareToTwitter  = () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank')
-  const shareToLinkedIn = () => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.origin)}`, '_blank')
+  const shareToLinkedIn = () => {
+    // LinkedIn doesn't support 'text' param in their basic share-offsite URL, 
+    // it only scrapes the URL. To get text, we need to use 'summary' or just suggest copying the text first.
+    // For now, we'll try to include the URL and prompt the user to paste.
+    const url = window.location.origin
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank')
+  }
 
   /* ── Loading ── */
   if (loading) {
