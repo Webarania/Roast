@@ -63,6 +63,45 @@ function Timer({ seconds, paused }) {
   )
 }
 
+function useSpeechRecognition(onResult) {
+  const [isListening, setIsListening] = useState(false)
+  const [error, setIsError] = useState(null)
+
+  const toggleListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser.")
+      return
+    }
+
+    if (isListening) {
+      setIsListening(false)
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.continuous = false
+    recognition.interimResults = false
+    recognition.lang = 'en-US'
+
+    recognition.onstart = () => setIsListening(true)
+    recognition.onerror = (event) => {
+      console.error("Speech error", event.error)
+      setIsError(event.error)
+      setIsListening(false)
+    }
+    recognition.onend = () => setIsListening(false)
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript
+      onResult(transcript)
+    }
+
+    recognition.start()
+  }
+
+  return { isListening, toggleListening, error }
+}
+
 export default function InterviewMode({ sessionId, questions, onComplete, onReset }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answer,       setAnswer]       = useState('')
@@ -72,6 +111,16 @@ export default function InterviewMode({ sessionId, questions, onComplete, onRese
   const [error,        setError]        = useState('')
   const [direction,    setDirection]    = useState(1)
   const [timerKey,     setTimerKey]     = useState(0)
+
+  // Speech for main answer
+  const { isListening: isListeningMain, toggleListening: toggleSpeechMain } = useSpeechRecognition((text) => {
+    setAnswer(prev => prev ? prev + " " + text : text)
+  })
+
+  // Speech for followup
+  const { isListening: isListeningFollowup, toggleListening: toggleSpeechFollowup } = useSpeechRecognition((text) => {
+    setFollowupAnswer(prev => prev ? prev + " " + text : text)
+  })
 
   // Hint state
   const [hints,        setHints]        = useState([])
@@ -287,7 +336,11 @@ export default function InterviewMode({ sessionId, questions, onComplete, onRese
                 </AnimatePresence>
 
                 <div className="relative">
-                  <textarea value={answer} onChange={e => setAnswer(e.target.value)} disabled={evaluating}
+                  <textarea 
+                    value={answer} 
+                    onChange={e => setAnswer(e.target.value)} 
+                    onPaste={e => e.preventDefault()}
+                    disabled={evaluating}
                     placeholder="Type your answer... Think through the problem step by step."
                     rows={6}
                     className="w-full rounded-xl p-4 text-white placeholder-gray-600 font-mono text-sm resize-none transition-all duration-200 disabled:opacity-50 focus:outline-none"
@@ -295,7 +348,15 @@ export default function InterviewMode({ sessionId, questions, onComplete, onRese
                       background: 'rgba(8,8,8,0.95)',
                       border: answer.length > 20 ? '1px solid rgba(74,222,128,0.3)' : answer.length > 0 ? '1px solid rgba(251,191,36,0.4)' : '1px solid rgba(255,255,255,0.08)',
                     }} />
-                  <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                  <div className="absolute bottom-3 right-3 flex items-center gap-3">
+                    <button 
+                      type="button"
+                      onClick={toggleSpeechMain}
+                      className={`p-2 rounded-lg transition-all ${isListeningMain ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-white/5 text-gray-400 hover:text-white'}`}
+                      title="Voice to Text"
+                    >
+                      {isListeningMain ? '🛑' : '🎤'}
+                    </button>
                     {answer.length > 0 && answer.length < 20 && <span className="text-xs text-yellow-500 font-mono">⚠️ too short</span>}
                     <span className="text-xs text-gray-600 font-mono">{answer.length}</span>
                   </div>
@@ -447,10 +508,23 @@ export default function InterviewMode({ sessionId, questions, onComplete, onRese
                       </div>
                       <p className="text-white font-semibold leading-relaxed">{followup.followup_question}</p>
                     </div>
-                    <textarea value={followupAnswer} onChange={e => setFollowupAnswer(e.target.value)}
+                    <textarea 
+                      value={followupAnswer} 
+                      onChange={e => setFollowupAnswer(e.target.value)}
+                      onPaste={e => e.preventDefault()}
                       placeholder="Answer the follow-up..." rows={4}
                       className="w-full rounded-xl p-4 text-white placeholder-gray-600 font-mono text-sm resize-none focus:outline-none"
                       style={{ background: 'rgba(8,8,8,0.95)', border: '1px solid rgba(147,51,234,0.2)' }} />
+                    <div className="flex justify-end -mt-12 mr-3 mb-4">
+                      <button 
+                        type="button"
+                        onClick={toggleSpeechFollowup}
+                        className={`p-2 rounded-lg transition-all ${isListeningFollowup ? 'bg-purple-500/20 text-purple-500 animate-pulse' : 'bg-white/5 text-gray-400 hover:text-white'}`}
+                        title="Voice to Text"
+                      >
+                        {isListeningFollowup ? '🛑' : '🎤'}
+                      </button>
+                    </div>
                     <motion.button
                       whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                       onClick={handleFollowupSubmit}
