@@ -75,33 +75,32 @@ function CodeRain() {
 }
 
 export default function Landing({ onStart }) {
-  export default function Landing({ onStart }) {
-    const [leaderboard, setLeaderboard] = useState([])
-    const [stats, setStats] = useState({ devs_roasted: 12847, share_rate: 31 })
-    const [statsVisible, setStatsVisible] = useState(false)
-    const statsRef = useRef(null)
-    const [roastIndex, setRoastIndex] = useState(0)
+  const [leaderboard, setLeaderboard] = useState([])
+  const [stats, setStats] = useState({ devs_roasted: 12847, share_rate: 31 })
+  const [statsVisible, setStatsVisible] = useState(false)
+  const statsRef = useRef(null)
+  const [roastIndex, setRoastIndex] = useState(0)
 
-    const devsRoasted = useCounter(stats.devs_roasted, 2000, statsVisible)
-    const shareRate   = useCounter(stats.share_rate,    1600, statsVisible)
-    const avgSeconds  = useCounter(45,    1400, statsVisible)
+  const devsRoasted = useCounter(stats.devs_roasted, 2000, statsVisible)
+  const shareRate   = useCounter(stats.share_rate,    1600, statsVisible)
+  const avgSeconds  = useCounter(45,    1400, statsVisible)
 
-    useEffect(() => {
-      const timer = setInterval(() => setRoastIndex(i => (i + 1) % SAMPLE_ROASTS.length), 4000)
-      return () => clearInterval(timer)
-    }, [])
+  useEffect(() => {
+    const timer = setInterval(() => setRoastIndex(i => (i + 1) % SAMPLE_ROASTS.length), 4000)
+    return () => clearInterval(timer)
+  }, [])
 
-    useEffect(() => {
-      // Wake up Render backend immediately
-      axios.get('https://roast-7n43.onrender.com/health').catch(() => {})
+  useEffect(() => {
+    // Wake up Render backend immediately
+    axios.get('https://roast-7n43.onrender.com/health').catch(() => {})
 
-      // Fetch real stats
-      axios.get('https://roast-7n43.onrender.com/stats')
-        .then(res => setStats(res.data))
-        .catch(() => {})
+    // Fetch real stats
+    axios.get('https://roast-7n43.onrender.com/stats')
+      .then(res => setStats(res.data))
+      .catch(() => {})
 
-      getLeaderboard(5).then(d => setLeaderboard(d.entries || [])).catch(() => {})
-    }, [])
+    getLeaderboard(5).then(d => setLeaderboard(d.entries || [])).catch(() => {})
+  }, [])
   useEffect(() => {
     const obs = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) setStatsVisible(true)
