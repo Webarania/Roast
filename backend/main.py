@@ -62,7 +62,10 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok", 
+        "database": "connected" if storage.USE_MONGO else "fallback_mode (local/memory)"
+    }
 
 
 @app.get("/stats")
