@@ -11,11 +11,15 @@ logger = logging.getLogger(__name__)
 
 # Fallback to in-memory if no URI provided
 USE_MONGO = bool(MONGODB_URI.strip())
+MONGO_ERROR = None
 
 # Initialize MongoDB if URI exists
 if USE_MONGO:
     try:
-        client = pymongo.MongoClient(MONGODB_URI)
+        client = pymongo.MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
+        # Force a connection check
+        client.admin.command('ping')
+        
         db = client.get_database("devroast")
         sessions_col = db.get_collection("sessions")
         leaderboard_col = db.get_collection("leaderboard")
@@ -29,6 +33,7 @@ if USE_MONGO:
         
         logger.info("🟢 Successfully connected to MongoDB Atlas!")
     except Exception as e:
+        MONGO_ERROR = str(e)
         logger.error(f"Failed to connect to MongoDB: {e}")
         USE_MONGO = False
 
