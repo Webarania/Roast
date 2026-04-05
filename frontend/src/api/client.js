@@ -33,7 +33,7 @@ export const uploadResume = (file) => {
   form.append('file', file)
   return api.post('/resume/upload', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
-    timeout: 20000,
+    timeout: 60000,
   })
 }
 
