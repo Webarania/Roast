@@ -33,11 +33,12 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
             status_code=400, detail=f"File size exceeds {MAX_FILE_SIZE_MB}MB limit"
         )
 
-    # Extract text from PDF
+    # Extract text from PDF (optimized for speed)
     try:
         pdf_text = ""
         with pdfplumber.open(io.BytesIO(content)) as pdf:
-            for page in pdf.pages:
+            # Only process first 3 pages to stay under Render's 30s timeout
+            for page in pdf.pages[:3]:
                 text = page.extract_text()
                 if text:
                     pdf_text += text + "\n"

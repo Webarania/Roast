@@ -182,35 +182,27 @@ def safe_join(items: Any, sep: str = ", ") -> str:
 
 async def parse_resume(resume_text: str) -> Dict:
     prompt = f"""
-    Extract structured technical info from this resume text.
+    Extract technical info from this resume.
+    If it is just generic text (not a CV), set "is_tech_resume" to false.
     
-    CRITICAL VALIDATION:
-    Identify if this is a REAL professional resume/CV. 
-    It MUST contain a person's name and either a professional summary, work history, or education.
-    If it is just a block of text about "Web Development" or a list of skills without a personal profile, 
-    set "is_tech_resume" to false.
+    Resume:
+    {resume_text[:3000]}
 
-    Acceptable domains include: Software Development, DevOps, Cloud Engineering, 
-    SAP/ERP (ABAP, HANA, etc.), Oracle/DBA, Data Science (AI/ML), 
-    Cybersecurity, Systems Administration, and general IT roles.
-
-    Resume Text:
-    {resume_text[:4000]}
-
-    Return ONLY valid JSON with this structure:
+    Return ONLY valid JSON:
     {{
       "is_tech_resume": true|false,
-      "reasoning": "1-line explanation of why this is or isn't a resume",
-      "name": "Developer Name or null",
-      "job_title": "Current Role (e.g. DevOps Lead, SAP Consultant)",
-      "domain": "Primary domain",
-      "skills": ["Skill1", "Skill2"],
-      "projects": [{{"name": "P1", "description": "...", "tech_stack": ["Node"]}}],
+      "reasoning": "1-line reason",
+      "name": "Name",
+      "job_title": "Role",
+      "domain": "Domain",
+      "skills": ["Skill1"],
+      "projects": [{{"name": "P1", "description": "...", "tech_stack": []}}],
       "experience_level": "junior|mid|senior",
       "years_of_experience": 3
     }}
     """
-    raw = await ai_call(prompt, system="Strict Technical Resume Validator. Only accept real CVs. Return JSON.", timeout=20.0)
+    # Reduced timeout to 15s to beat Render's 30s wall
+    raw = await ai_call(prompt, system="Strict Resume Validator. Return JSON.", timeout=15.0)
     return extract_json(raw)
 
 async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -> Dict:
