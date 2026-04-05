@@ -183,19 +183,25 @@ def safe_join(items: Any, sep: str = ", ") -> str:
 async def parse_resume(resume_text: str) -> Dict:
     prompt = f"""
     Extract structured technical info from this resume text.
-    Also VALIDATE if this is a real tech/IT/developer resume.
     
+    CRITICAL VALIDATION:
+    Identify if this is a REAL professional resume/CV. 
+    It MUST contain a person's name and either a professional summary, work history, or education.
+    If it is just a block of text about "Web Development" or a list of skills without a personal profile, 
+    set "is_tech_resume" to false.
+
     Acceptable domains include: Software Development, DevOps, Cloud Engineering, 
     SAP/ERP (ABAP, HANA, etc.), Oracle/DBA, Data Science (AI/ML), 
     Cybersecurity, Systems Administration, and general IT roles.
 
-    Resume:
+    Resume Text:
     {resume_text[:4000]}
 
     Return ONLY valid JSON with this structure:
     {{
       "is_tech_resume": true|false,
-      "name": "Developer Name",
+      "reasoning": "1-line explanation of why this is or isn't a resume",
+      "name": "Developer Name or null",
       "job_title": "Current Role (e.g. DevOps Lead, SAP Consultant)",
       "domain": "Primary domain",
       "skills": ["Skill1", "Skill2"],
@@ -204,7 +210,7 @@ async def parse_resume(resume_text: str) -> Dict:
       "years_of_experience": 3
     }}
     """
-    raw = await ai_call(prompt, system="Technical resume parser for all IT domains. Return only valid JSON.", timeout=20.0)
+    raw = await ai_call(prompt, system="Strict Technical Resume Validator. Only accept real CVs. Return JSON.", timeout=20.0)
     return extract_json(raw)
 
 async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -> Dict:

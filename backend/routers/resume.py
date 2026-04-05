@@ -56,16 +56,17 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
         
         # Stricter tech validation using AI's judgment
         if parsed.get("is_tech_resume") is False:
+            reason = parsed.get("reasoning", "This file doesn't look like a technical CV or professional resume.")
             raise HTTPException(
                 status_code=400,
-                detail="This doesn't look like a technical/developer resume. Please upload a relevant resume to get roasted properly."
+                detail=f"Validation Failed: {reason} Please upload a real developer resume."
             )
             
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"AI parsing error: {e}")
-        # Fallback keyword check if AI fails
+        # Fallback keyword check if AI fails or is overloaded
         tech_keywords = [
             "python", "javascript", "java", "react", "node", "sql", "api",
             "developer", "engineer", "software", "programming", "code", "git",
@@ -76,10 +77,12 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
             "cybersecurity", "security", "network", "system admin", "linux", "unix", "cloud",
         ]
         text_lower = pdf_text.lower()
-        if not any(kw in text_lower for kw in tech_keywords):
+        
+        # Heuristic: If it has tech keywords but is too short, it might just be a block of text
+        if not any(kw in text_lower for kw in tech_keywords) or len(pdf_text.split()) < 40:
             raise HTTPException(
                 status_code=400,
-                detail="This doesn't look like a tech resume. Please upload a developer resume.",
+                detail="This doesn't look like a real tech resume. It's either too short or doesn't mention technical skills/experience.",
             )
         
         parsed = {
