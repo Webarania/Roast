@@ -26,10 +26,10 @@ if USE_MONGO:
         shares_col = db.get_collection("shares")
         
         # Ensure indexes for performance
-        leaderboard_col.create_index("score", direction=pymongo.DESCENDING)
-        leaderboard_col.create_index("session_id", unique=True)
-        sessions_col.create_index("created_at")
-        shares_col.create_index("created_at")
+        leaderboard_col.create_index([("score", pymongo.DESCENDING)])
+        leaderboard_col.create_index([("session_id", pymongo.ASCENDING)], unique=True)
+        sessions_col.create_index([("created_at", pymongo.ASCENDING)])
+        shares_col.create_index([("created_at", pymongo.ASCENDING)])
         
         logger.info("🟢 Successfully connected to MongoDB Atlas!")
     except Exception as e:
