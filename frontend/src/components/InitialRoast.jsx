@@ -175,7 +175,7 @@ export default function InitialRoast({ sessionId, resumeData, intensity = 'mediu
             {roast?.weak_skills?.length > 0 && (
               <div className="card" style={{ border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.03)' }}>
                 <div style={{ fontSize: '11px', fontWeight: 700, color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
-                  ❌ Probably Lying About
+                  ❌ Suspicious Skills
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {roast.weak_skills.map(s => (

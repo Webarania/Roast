@@ -16,6 +16,8 @@
     color: #e5e5e5;
     font-family: 'Inter', 'JetBrains Mono', Consolas, monospace;
     min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
   }
 
   /* ── Scrollbar ── */
@@ -33,6 +35,12 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #ff6b35;
   }
+}
+
+.motion-gpu {
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform: translateZ(0);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -533,7 +541,8 @@
 ───────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .card { @apply p-4; border-radius: 1rem; }
-  .btn-primary, .btn-secondary { @apply py-2.5 px-4 text-sm; }
+  .btn-primary, .btn-secondary { @apply py-2.5 px-4 text-sm; width: 100%; }
+  h1 { font-size: 2.2rem !important; line-height: 1.1 !important; }
 }
 
 /* Landing hero split layout */
