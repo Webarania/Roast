@@ -147,6 +147,11 @@ def get_share(share_id: str) -> Optional[dict]:
         return doc
     return _share_store.get(share_id)
 
+def get_share_count() -> int:
+    if USE_MONGO:
+        return shares_col.count_documents({})
+    return len(_share_store)
+
 def cleanup_old_sessions(max_age_hours: int = 2) -> int:
     import datetime as dt
     cutoff = dt.datetime.utcnow() - dt.timedelta(hours=max_age_hours)

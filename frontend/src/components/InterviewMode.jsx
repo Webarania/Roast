@@ -265,7 +265,7 @@ export default function InterviewMode({ sessionId, questions, onComplete, onRese
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-2xl mb-6 relative z-10">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-500 font-mono font-semibold">Question {currentIndex + 1} / {questions.length}</span>
+            <span className="text-xs text-gray-500 font-mono font-semibold">Question {current?.display_id || currentIndex + 1} / {questions.length}</span>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: diff.bg, border: `1px solid ${diff.border}`, color: diff.color }}>{diff.label}</span>
           </div>
           <div className="flex items-center gap-3">

@@ -5,6 +5,7 @@ import json
 import re
 import logging
 import asyncio
+import random
 from typing import Any, Dict, Optional, List
 
 import httpx
@@ -38,7 +39,7 @@ async def call_groq(prompt: str, system: str = "", timeout: float = 15.0) -> str
     payload = {
         "model": GROQ_MODEL,
         "messages": messages,
-        "temperature": 0.7,
+        "temperature": 0.8, # Higher temperature for more variety
         "max_tokens": 1024,
     }
 
@@ -78,7 +79,7 @@ async def call_gemini(prompt: str, system: str = "", timeout: float = 15.0) -> s
         response = await model.generate_content_async(
             prompt,
             generation_config=genai.types.GenerationConfig(
-                temperature=0.7,
+                temperature=0.8,
                 max_output_tokens=1024,
             )
         )
@@ -209,6 +210,17 @@ async def parse_resume(resume_text: str) -> Dict:
 async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -> Dict:
     style = "gentle teasing" if intensity == "mild" else "absolutely brutal, career-ending, and deeply insulting honesty" if intensity == "savage" else "sarcastic and witty"
     
+    # Add a random seeds/styles to prevent repetitive jokes
+    roast_themes = [
+        "Focus on how their skills look like a copy-pasted tutorial list.",
+        "Focus on how their projects sound like things built in a weekend while watching Netflix.",
+        "Focus on their 'experience' being just sitting in meetings.",
+        "Focus on the contrast between their high-ego job title and their basic skill set.",
+        "Use a meta-commentary style where you mock the person reading the resume.",
+        "Focus on the 'gap' between what they claim and what they actually know."
+    ]
+    theme = random.choice(roast_themes)
+
     prompt = f"""
     Roast this tech professional's resume. Tone: {style}.
     Role: {resume_data.get('job_title')}
@@ -216,12 +228,15 @@ async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -
     Skills: {safe_join(resume_data.get('skills'))}
     Experience: {resume_data.get('experience_level')}
     
-    IMPORTANT: If savage, be heartless. Customize the roast to their specific domain:
+    Theme: {theme}
+
+    IMPORTANT: Be nuanced. Don't just say they are lying. Say they 'might' be lying or 'it smells like a YouTube tutorial project'. 
+    If savage, be heartless but creative. Do NOT use the standard 'MNC' or 'Kindergarten' jokes. 
+    Customize the roast to their specific domain:
     - For DevOps: Mock their yaml files and "infinite" pipelines that just crash.
     - For SAP/Oracle: Roast their ancient tech stack and boring enterprise lifestyle.
     - For AI/ML: Mock them for being just "wrapper" developers or using basic prompts.
     - For DB Analysts: Joke about how they are just Excel experts with a complex.
-    - General: Tell them they aren't eligible for MNCs and should stick to primary school teaching.
 
     Return ONLY valid JSON:
     {{
@@ -231,14 +246,21 @@ async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -
       "red_flags": ["flag1"]
     }}
     """
-    raw = await ai_call(prompt, system="Brutally funny and mean tech industry interviewer. You roast all IT roles without mercy. Return JSON.", timeout=15.0)
+    raw = await ai_call(prompt, system="Brutally funny tech industry interviewer. You have no filter but you are creative. Return JSON.", timeout=15.0)
     return extract_json(raw)
 
 async def generate_questions(resume_data: dict, count: int = 5, intensity: str = "medium") -> list:
+    # Use a random seed to vary question generation
+    random_seed = random.randint(1, 1000)
+    
     prompt = f"""
-    Generate {count} real-world, scenario-based interview questions for a {resume_data.get('experience_level')} dev.
+    Generate {count} UNIQUE real-world, scenario-based interview questions for a {resume_data.get('experience_level')} dev.
     Skills: {safe_join(resume_data.get('skills'))}
     Intensity: {intensity}
+    Random Seed: {random_seed}
+    
+    Every question must be a PRACTICAL on-the-job scenario. 
+    Examples: 'The server just crashed because of X, what do you do?', 'A client wants Y but Z is broken, how do you handle it?'.
     
     Return ONLY valid JSON array of objects:
     [
@@ -248,33 +270,38 @@ async def generate_questions(resume_data: dict, count: int = 5, intensity: str =
         "skill_tested": "Primary skill",
         "difficulty": "easy|medium|hard",
         "category": "debug|system_design|code_review",
-        "context": "Why this is relevant to their resume"
+        "context": "Why this is relevant to their specific resume"
       }}
     ]
     """
-    raw = await ai_call(prompt, system="Senior tech interviewer. Scenario-based only. Return JSON array.", timeout=20.0)
+    raw = await ai_call(prompt, system="Senior tech interviewer. Scenario-based only. No generic definitions. Return JSON array.", timeout=20.0)
     return extract_json(raw)
 
 async def generate_mcqs(resume_data: dict, count: int = 5) -> list:
     """Generate multiple choice questions based on the resume skills."""
+    random_seed = random.randint(1, 1000)
+    
     prompt = f"""
     Generate {count} technical Multiple Choice Questions (MCQs) for this dev.
     Skills: {safe_join(resume_data.get('skills'))}
+    Random Seed: {random_seed}
+    
+    These must be tough, technical questions, not basics. 
     
     Return ONLY valid JSON array:
     [
       {{
         "id": "mcq_1",
         "type": "mcq",
-        "text": "The question text?",
+        "text": "The technical question text?",
         "options": ["Option A", "Option B", "Option C", "Option D"],
-        "correct_answer": "Option A",
-        "skill_tested": "React",
-        "difficulty": "medium"
+        "correct_answer": "Exact text of the correct option",
+        "skill_tested": "The specific skill",
+        "difficulty": "medium|hard"
       }}
     ]
     """
-    raw = await ai_call(prompt, system="MCQ Generator. Return JSON array. Each question must have 4 options and one correct_answer.", timeout=20.0)
+    raw = await ai_call(prompt, system="MCQ Generator. Use variety. Return JSON array.", timeout=20.0)
     return extract_json(raw)
 
 async def evaluate_answer(question: str, skill: str, answer: str) -> Dict:
@@ -313,31 +340,47 @@ async def generate_final_roast(session: dict) -> Dict:
     evals = session.get("evaluations", [])
     avg = sum(e.get("score", 0) for e in evals) / len(evals) if evals else 0
     intensity = session.get("intensity", "medium")
+    
+    # Randomized themes for final roasts
+    final_themes = [
+        "Focus on how they should probably change careers to something non-technical.",
+        "Focus on how they are just a 'copy-paste' engineer.",
+        "Focus on how their skill gap is wider than the Grand Canyon.",
+        "Focus on how they might survive in a company that doesn't care about quality.",
+        "Focus on their specific blunders in the interview questions."
+    ]
+    theme = random.choice(final_themes)
 
     prompt = f"""
     Generate the final verdict for {session.get('resume_data', {}).get('name')}.
     Avg Score: {avg}/10. 
     Summary: {safe_join([f"Q: {e.get('skill')} (Score: {e.get('score')}/10)" for e in evals])}
     Intensity: {intensity}
+    Theme: {theme}
 
-    If intensity is savage, be absolutely devastating. Use comparisons like 'You're not built for an MNC', 'Try applying for a school teacher job', or 'A calculator has more logic than you'. Question their degree and career choices.
+    If intensity is savage, be absolutely devastating but creative. DO NOT use 'MNC' or 'school teacher' jokes. 
+    Use fresh insults like 'A GPT-2 model has more logic', 'You write code like you're using a typewriter', or 'Your career is basically a series of successful bluffs'.
 
     Return ONLY valid JSON:
     {{
       "final_roast": "Final 3-5 line brutal paragraph",
       "fake_skills": ["skill1"],
-      "verdict": "One-line summary"
+      "verdict": "One-line summary verdict"
     }}
     """
-    raw = await ai_call(prompt, system="Final roast verdict mode. Max savagery and mean-spirited honesty. Return JSON.", timeout=15.0)
+    raw = await ai_call(prompt, system="Final roast verdict mode. Max creativity in roasting. Return JSON.", timeout=15.0)
     return extract_json(raw)
 
 async def generate_hint(question: str, skill: str, partial_answer: str, hint_number: int = 1) -> Dict:
+    # Randomize hint style
+    hint_styles = ["Encouraging but vague", "Slightly mocking", "Technical and precise", "Analogy-based"]
+    style = random.choice(hint_styles)
+    
     prompt = f"""
     The candidate is stuck on this question: {question}
     Skill: {skill}
     Current Answer: {partial_answer}
-    Hint Number: {hint_number}/3
+    Hint Style: {style}
 
     Return ONLY valid JSON:
     {{

@@ -64,13 +64,14 @@ async def initial_roast(request: Request, req: InitialRoastRequest):
 @router.post("/questions")
 @limiter.limit("10/minute")
 async def start_interview(request: Request, req: StartInterviewRequest):
-    """Generate interview questions based on resume (Scenario + MCQs)."""
+    """Generate interview questions based on resume (Scenario + MCQs, interleaved)."""
     session = _get_session_or_404(req.session_id)
     resume_data = session.get("resume_data")
     if not resume_data:
         raise HTTPException(status_code=400, detail="No resume data in session")
 
-    scenario_count = max(2, min(5, req.question_count))
+    # Set to 5 + 5 = 10 total questions
+    scenario_count = 5
     mcq_count = 5
     intensity = session.get("intensity", req.intensity)
 
@@ -86,20 +87,25 @@ async def start_interview(request: Request, req: StartInterviewRequest):
             raise
         raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}")
 
-    # Combine and ensure proper IDs
+    # Combine and Interleave (MCQ, Scenario, MCQ, Scenario...)
     all_questions = []
+    max_len = max(len(mcq_questions), len(scenario_questions))
     
-    # Add MCQs first
-    for i, q in enumerate(mcq_questions):
-        q["id"] = f"mcq_{i+1}"
-        q["type"] = "mcq"
-        all_questions.append(q)
-        
-    # Add Scenarios
-    for i, q in enumerate(scenario_questions):
-        q["id"] = i + 1
-        q["type"] = "scenario"
-        all_questions.append(q)
+    for i in range(max_len):
+        if i < len(mcq_questions):
+            q = mcq_questions[i]
+            q["id"] = f"mcq_{i+1}"
+            q["type"] = "mcq"
+            all_questions.append(q)
+        if i < len(scenario_questions):
+            q = scenario_questions[i]
+            q["id"] = i + 1
+            q["type"] = "scenario"
+            all_questions.append(q)
+
+    # Re-assign sequential IDs for the frontend to handle easily
+    for idx, q in enumerate(all_questions):
+        q["display_id"] = idx + 1
 
     storage.update_session(req.session_id, "questions", all_questions)
     return {"questions": all_questions}

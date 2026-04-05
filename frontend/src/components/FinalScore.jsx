@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getFinalRoast, submitToLeaderboard, generateShare } from '../api/client'
+import html2canvas from 'html2canvas'
 
 /* ── Confetti ── */
 function Confetti() {
@@ -113,6 +114,7 @@ const BADGE_CONFIG = {
 }
 
 export default function FinalScore({ sessionId, resumeData, intensity = 'medium', onViewLeaderboard, onFixPlan, onReset }) {
+  const scoreCardRef = useRef(null)
   const [result,      setResult]      = useState(null)
   const [loading,     setLoading]     = useState(true)
   const [error,       setError]       = useState('')
@@ -167,9 +169,31 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
 
   const handleShare = async () => {
     try {
+      // 1. Capture the score card as an image
+      let imageData = null
+      if (scoreCardRef.current) {
+        const canvas = await html2canvas(scoreCardRef.current, {
+          backgroundColor: '#050505',
+          scale: 2, // Higher quality
+          logging: false,
+          useCORS: true
+        })
+        imageData = canvas.toDataURL('image/png')
+      }
+
+      // 2. Generate the share link from backend
       const data = await generateShare(sessionId, displayName || resumeData?.name || 'Dev')
       setShareText(data.share_text)
       setShareUrl(data.share_url)
+      
+      // 3. Download the image for the user
+      if (imageData) {
+        const link = document.createElement('a')
+        link.download = `dev-roast-score-${displayName || 'dev'}.png`
+        link.href = imageData
+        link.click()
+        alert("Score card image downloaded! You can now upload this image when you share your link on LinkedIn or Instagram.")
+      }
     } catch (err) {
       setError(err.message)
     }
@@ -284,6 +308,7 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
       </motion.div>
 
       <motion.div
+        ref={scoreCardRef}
         variants={containerVariants}
         initial="hidden"
         animate="visible"

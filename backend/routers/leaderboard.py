@@ -58,7 +58,7 @@ async def get_leaderboard(limit: int = 20, offset: int = 0):
 
     return {
         "entries": ranked,
-        "total": len(storage.leaderboard),
+        "total": storage.get_leaderboard_count(),
     }
 
 
@@ -68,4 +68,4 @@ async def get_my_rank(session_id: str):
     rank = storage.get_user_rank(session_id)
     if rank == -1:
         raise HTTPException(status_code=404, detail="Session not on leaderboard yet")
-    return {"rank": rank, "total": len(storage.leaderboard)}
+    return {"rank": rank, "total": storage.get_leaderboard_count()}
