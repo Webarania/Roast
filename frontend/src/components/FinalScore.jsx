@@ -181,10 +181,10 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
         imageData = canvas.toDataURL('image/png')
       }
 
-      // 2. Generate the share link from backend
+      // 2. Generate the share link from backend (for tracking/DB)
       const data = await generateShare(sessionId, displayName || resumeData?.name || 'Dev')
       setShareText(data.share_text)
-      setShareUrl(data.share_url)
+      setShareUrl('https://madanaidev.fun/roast') // Use the specific requested redirect link
       
       // 3. Download the image for the user
       if (imageData) {
@@ -205,22 +205,24 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const shareToTwitter  = () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank')
+  const shareToTwitter  = () => {
+    const text = `🔥 I just got roasted by Dev Roast AI!\n\nScore: ${result.total_score}/100\nBadge: ${result.badge_title}\n\n"${result.final_roast.substring(0, 100)}..."\n\nGet exposed here: https://madanaidev.fun/roast`
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank')
+  }
+
   const shareToLinkedIn = () => {
-    // Use the specific shareable URL
-    const url = shareUrl || window.location.href
+    const url = `https://madanaidev.fun/roast`
+    // LinkedIn doesn't support pre-filled text well, so we rely on the URL and the downloaded image
     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank')
   }
 
   const shareToInstagram = () => {
-    // Copy the roast text to clipboard first
-    navigator.clipboard.writeText(shareText)
+    const text = `🔥 Dev Roast AI Score: ${result.total_score}/100\n🏆 Badge: ${result.badge_title}\n\n${result.final_roast}\n\nAnalyze your resume at madanaidev.fun/roast`
+    navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
     
-    // Direct Instagram Story sharing from web is not supported by Meta.
-    // We notify the user and open Instagram.
-    alert("Roast text copied! Instagram doesn't allow direct story sharing from web browsers. \n\nOpening Instagram... you can paste your results into your Story or Bio!")
+    alert("🚀 Instagram Format Ready!\n\n1. Your score card image was downloaded.\n2. The viral roast text is copied to your clipboard.\n\nOpening Instagram now... Paste the text into your Story or Bio!")
     window.open(`https://www.instagram.com/`, '_blank')
   }
 
