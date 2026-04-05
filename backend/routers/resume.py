@@ -79,11 +79,14 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
         ]
         text_lower = pdf_text.lower()
         
-        # Heuristic: If it has tech keywords but is too short, it might just be a block of text
-        if not any(kw in text_lower for kw in tech_keywords) or len(pdf_text.split()) < 40:
+        # Heuristic: If it has tech keywords but is too short, or has documentation keywords, it might just be a block of text
+        doc_keywords = ["handoff", "documentation", "manual", "guide", "specification", "api spec", "technical report"]
+        is_doc = any(dk in text_lower for dk in doc_keywords)
+        
+        if not any(kw in text_lower for kw in tech_keywords) or len(pdf_text.split()) < 40 or is_doc:
             raise HTTPException(
                 status_code=400,
-                detail="This doesn't look like a real tech resume. It's either too short or doesn't mention technical skills/experience.",
+                detail="This doesn't look like a real tech resume. It looks like a technical document or manual.",
             )
         
         parsed = {

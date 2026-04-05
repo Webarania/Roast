@@ -182,18 +182,22 @@ def safe_join(items: Any, sep: str = ", ") -> str:
 
 async def parse_resume(resume_text: str) -> Dict:
     prompt = f"""
-    Extract technical info from this resume.
-    If it is just generic text (not a CV), set "is_tech_resume" to false.
-    
-    Resume:
+    You are a professional CV Auditor. Your task is to identify if the text below is a REAL personal career resume/CV or just a technical document.
+
+    STRICT RULES:
+    1. A resume MUST describe an INDIVIDUAL'S career history, contact info, or educational background.
+    2. If the text is a project manual, handoff document, API spec, technical guide, or "Webarnania 3.0 Documentation", set "is_tech_resume" to FALSE.
+    3. Even if it lists technical skills (like GSAP, Three.js), if it's not for a human's job application, it is NOT a resume.
+
+    Resume Text:
     {resume_text[:3000]}
 
     Return ONLY valid JSON:
     {{
       "is_tech_resume": true|false,
-      "reasoning": "1-line reason",
-      "name": "Name",
-      "job_title": "Role",
+      "reasoning": "Explain why this is or isn't a CV. For example: 'This is a project handoff document, not a personal resume.'",
+      "name": "Full Name of the person (if found)",
+      "job_title": "Target/Current Role",
       "domain": "Domain",
       "skills": ["Skill1"],
       "projects": [{{"name": "P1", "description": "...", "tech_stack": []}}],
@@ -202,7 +206,7 @@ async def parse_resume(resume_text: str) -> Dict:
     }}
     """
     # Reduced timeout to 15s to beat Render's 30s wall
-    raw = await ai_call(prompt, system="Strict Resume Validator. Return JSON.", timeout=15.0)
+    raw = await ai_call(prompt, system="Professional CV Auditor. You distinguish between resumes and technical manuals.", timeout=15.0)
     return extract_json(raw)
 
 async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -> Dict:
