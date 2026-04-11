@@ -28,10 +28,9 @@ api.interceptors.response.use(
   }
 )
 
-export const uploadResume = (file, mobile = '') => {
+export const uploadResume = (file) => {
   const form = new FormData()
   form.append('file', file)
-  form.append('mobile', mobile)
   return api.post('/resume/upload', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 60000,

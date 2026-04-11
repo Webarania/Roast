@@ -25,6 +25,7 @@ async def submit_to_leaderboard(req: LeaderboardSubmitRequest):
         "session_id": req.session_id,
         "display_name": display_name,
         "mobile": session.get("mobile", ""),
+        "email": session.get("email", ""),
         "score": final_result["total_score"],
         "badge": final_result["badge"],
         "badge_title": final_result["badge_title"],

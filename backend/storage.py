@@ -1,3 +1,4 @@
+import re
 import uuid
 import logging
 import os
@@ -83,31 +84,25 @@ def update_session(session_id: str, key: str, value) -> bool:
     return True
 
 def add_to_leaderboard(entry: dict) -> int:
-    # Use mobile as the unique key to prevent duplicate entries for the same person
-    mobile = entry.get("mobile")
+    # Use mobile or email as the unique key to prevent duplicate entries for the same person
+    mobile = entry.get("mobile", "").strip()
+    email = entry.get("email", "").strip()
     if USE_MONGO:
         if mobile:
-            # Upsert by mobile — same person updating their score
-            leaderboard_col.update_one(
-                {"mobile": mobile},
-                {"$set": entry},
-                upsert=True
-            )
+            leaderboard_col.update_one({"mobile": mobile}, {"$set": entry}, upsert=True)
+        elif email:
+            leaderboard_col.update_one({"email": email}, {"$set": entry}, upsert=True)
         else:
-            # Fallback: upsert by session_id
-            leaderboard_col.update_one(
-                {"session_id": entry["session_id"]},
-                {"$set": entry},
-                upsert=True
-            )
-        # Calculate rank by counting how many docs have a higher score
+            leaderboard_col.update_one({"session_id": entry["session_id"]}, {"$set": entry}, upsert=True)
         higher_scores = leaderboard_col.count_documents({"score": {"$gt": entry["score"]}})
         return higher_scores + 1
     else:
-        # In-memory: dedup by mobile first, then session_id
         match_key = None
         for i, e in enumerate(_leaderboard):
             if mobile and e.get("mobile") == mobile:
+                match_key = i
+                break
+            if email and e.get("email") == email:
                 match_key = i
                 break
             if e["session_id"] == entry["session_id"]:
@@ -223,6 +218,20 @@ def get_leaderboard_count() -> int:
     if USE_MONGO:
         return leaderboard_col.count_documents({})
     return len(_leaderboard)
+
+
+def remove_leaderboard_by_name(display_name: str) -> int:
+    """Remove leaderboard entries matching a display_name (case-insensitive)."""
+    name_lower = display_name.strip().lower()
+    if USE_MONGO:
+        result = leaderboard_col.delete_many({
+            "display_name": {"$regex": f"^{re.escape(name_lower)}$", "$options": "i"}
+        })
+        return result.deleted_count
+    else:
+        before = len(_leaderboard)
+        _leaderboard[:] = [e for e in _leaderboard if e.get("display_name", "").strip().lower() != name_lower]
+        return before - len(_leaderboard)
 
 
 def cleanup_duplicate_leaderboard() -> dict:

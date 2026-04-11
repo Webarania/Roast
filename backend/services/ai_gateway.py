@@ -197,6 +197,8 @@ async def parse_resume(resume_text: str) -> Dict:
       "is_tech_resume": true|false,
       "reasoning": "Explain why this is or isn't a CV. For example: 'This is a project handoff document, not a personal resume.'",
       "name": "Full Name of the person (if found)",
+      "email": "Email address found in the resume (or empty string if not found)",
+      "mobile": "Phone/mobile number found in the resume (or empty string if not found)",
       "job_title": "Target/Current Role",
       "domain": "Domain",
       "skills": ["Skill1"],

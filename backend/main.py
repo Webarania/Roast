@@ -78,6 +78,13 @@ async def cleanup_duplicates():
     return result
 
 
+@app.delete("/admin/leaderboard/{display_name}")
+async def remove_from_leaderboard(display_name: str):
+    """Remove all leaderboard entries matching a display name."""
+    removed = storage.remove_leaderboard_by_name(display_name)
+    return {"removed": removed, "display_name": display_name}
+
+
 @app.get("/stats")
 async def stats():
     """Return real server stats from DB."""
