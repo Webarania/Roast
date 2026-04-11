@@ -73,19 +73,17 @@ async def health():
 async def stats():
     """Return real server stats from DB."""
     total_db_roasted = storage.get_session_count()
-    total_roasted = total_db_roasted + 12847 # Offset with viral initial count
-    
     share_count = storage.get_share_count()
-    
-    # Calculate real rate or use fallback if new
-    share_rate = 31
+
+    # Calculate real rate based purely on DB data
+    share_rate = 0
     if total_db_roasted > 0:
-        share_rate = max(31, round((share_count / total_db_roasted) * 100))
-        
+        share_rate = round((share_count / total_db_roasted) * 100)
+
     avg_session = storage.get_avg_session_time()
-        
+
     return {
-        "devs_roasted": total_roasted,
+        "devs_roasted": total_db_roasted,
         "share_rate": share_rate,
         "avg_session": avg_session,
         "active_sessions": total_db_roasted,

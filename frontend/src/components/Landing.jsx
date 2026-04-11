@@ -75,7 +75,7 @@ function CodeRain() {
 }
 export default function Landing({ onStart }) {
   const [leaderboard, setLeaderboard] = useState([])
-  const [stats, setStats] = useState({ devs_roasted: 12847, share_rate: 31, avg_session: 45 })
+  const [stats, setStats] = useState({ devs_roasted: 0, share_rate: 0, avg_session: 0 })
   const [statsVisible, setStatsVisible] = useState(false)
   const statsRef = useRef(null)
   const [roastIndex, setRoastIndex] = useState(0)

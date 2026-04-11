@@ -162,24 +162,15 @@ def get_share_count() -> int:
 def get_avg_session_time() -> int:
     """Calculate avg time from creation to final result in seconds."""
     if USE_MONGO:
-        # Simple heuristic: average of last 100 completed sessions
+        # Get last 100 completed sessions
         docs = list(sessions_col.find({"final_result": {"$ne": None}}).sort("created_at", -1).limit(100))
         if not docs:
-            return 45
+            return 0
         
-        total_time = 0
-        count = 0
-        for doc in docs:
-            try:
-                start = datetime.fromisoformat(doc["created_at"])
-                # Use timestamp of final result update if we had it, 
-                # for now we'll return a random realistic average between 40-50
-                # because we don't have a finished_at field yet.
-                pass
-            except:
-                pass
-        return random.randint(42, 52)
-    return 45
+        # For now, since we don't have a finished_at field, we'll return 0 
+        # until we implement precise timing or have enough data to derive it.
+        return 0
+    return 0
 
 def cleanup_old_sessions(max_age_hours: int = 2) -> int:
     import datetime as dt
