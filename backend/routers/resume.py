@@ -2,7 +2,7 @@ import io
 import logging
 
 import pdfplumber
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile, Form
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -17,7 +17,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 @router.post("/upload")
 @limiter.limit("5/minute")
-async def upload_resume(request: Request, file: UploadFile = File(...)):
+async def upload_resume(request: Request, file: UploadFile = File(...), mobile: str = Form("")):
     """Upload a PDF resume, parse it, and create a session."""
 
     # Validate file type
@@ -116,6 +116,8 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
         "raw_text": pdf_text[:3000],
     }
     storage.update_session(session_id, "resume_data", resume_data)
+    if mobile.strip():
+        storage.update_session(session_id, "mobile", mobile.strip())
 
     return {
         "session_id": session_id,

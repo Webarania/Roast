@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getLeaderboard } from '../api/client'
+import { getLeaderboard, getFeedback } from '../api/client'
 import axios from 'axios'
 
 const SAMPLE_ROASTS = [
@@ -75,11 +75,11 @@ function CodeRain() {
 }
 export default function Landing({ onStart }) {
   const [leaderboard, setLeaderboard] = useState([])
+  const [feedbackList, setFeedbackList] = useState([])
   const [stats, setStats] = useState({ devs_roasted: 0, share_rate: 0, avg_session: 0 })
   const [statsVisible, setStatsVisible] = useState(false)
   const statsRef = useRef(null)
   const [roastIndex, setRoastIndex] = useState(0)
-
   const devsRoasted = useCounter(stats.devs_roasted, 2000, statsVisible)
   const shareRate   = useCounter(stats.share_rate,    1600, statsVisible)
   const avgSeconds  = useCounter(stats.avg_session,   1400, statsVisible)
@@ -99,6 +99,7 @@ export default function Landing({ onStart }) {
       .catch(() => {})
 
     getLeaderboard(5).then(d => setLeaderboard(d.entries || [])).catch(() => {})
+    getFeedback(12).then(d => setFeedbackList(d.entries || [])).catch(() => {})
   }, [])
   useEffect(() => {
     const obs = new IntersectionObserver(([entry]) => {
@@ -468,6 +469,61 @@ export default function Landing({ onStart }) {
                   </motion.div>
                 )
               })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════ FEEDBACK WALL ═══════════════════ */}
+      {feedbackList.length > 0 && (
+        <section style={{ padding: '60px 24px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
+              style={{ textAlign: 'center', marginBottom: '36px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.15em' }}>WHAT DEVS ARE SAYING</span>
+              <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', fontWeight: 900, color: '#fff', marginTop: '12px' }}>
+                Feedback <span className="fire-gradient">Wall</span>
+              </h2>
+            </motion.div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
+              {feedbackList.map((fb, i) => (
+                <motion.div key={i}
+                  initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                  transition={{ delay: i * 0.06 }}
+                  style={{
+                    padding: '20px', borderRadius: '16px', background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255,255,255,0.06)', position: 'relative',
+                  }}>
+                  {/* Stars */}
+                  <div style={{ marginBottom: '10px', fontSize: '16px', letterSpacing: '2px' }}>
+                    {Array.from({ length: 5 }, (_, j) => (
+                      <span key={j} style={{ opacity: j < fb.rating ? 1 : 0.2 }}>{'\u2B50'}</span>
+                    ))}
+                  </div>
+                  {/* Message */}
+                  {fb.message && (
+                    <p style={{ fontSize: '13px', color: '#d1d5db', lineHeight: 1.6, margin: '0 0 12px 0', fontStyle: 'italic' }}>
+                      "{fb.message}"
+                    </p>
+                  )}
+                  {/* Author */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 800, fontSize: '11px', color: '#fff',
+                        background: `hsl(${(fb.display_name?.charCodeAt(0) || 0) * 15}, 50%, 30%)`,
+                      }}>
+                        {(fb.display_name || '?')[0]}
+                      </div>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#9ca3af' }}>{fb.display_name}</span>
+                    </div>
+                    {fb.score > 0 && (
+                      <span className="fire-gradient" style={{ fontSize: '13px', fontWeight: 900 }}>{fb.score}/100</span>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
         </section>

@@ -8,7 +8,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from config import FRONTEND_URL
-from routers import leaderboard, resume, roast, share
+from routers import feedback, leaderboard, resume, roast, share
 import storage
 
 logging.basicConfig(level=logging.INFO)
@@ -48,6 +48,7 @@ app.include_router(resume.router, prefix="/api/resume", tags=["Resume"])
 app.include_router(roast.router, prefix="/api/roast", tags=["Roast & Interview"])
 app.include_router(leaderboard.router, prefix="/api/leaderboard", tags=["Leaderboard"])
 app.include_router(share.router, prefix="/api/share", tags=["Share"])
+app.include_router(feedback.router, prefix="/api/feedback", tags=["Feedback"])
 
 
 @app.on_event("startup")

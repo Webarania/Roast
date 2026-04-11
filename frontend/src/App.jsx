@@ -107,6 +107,7 @@ function MainApp() {
           onViewLeaderboard={() => setScreen('leaderboard')}
           onFixPlan={() => setScreen('fixplan')}
           onReset={reset}
+          onRoastAgain={() => setScreen('upload')}
         />
       )}
       {screen === 'leaderboard' && (
@@ -119,6 +120,7 @@ function MainApp() {
         <FixPlan
           sessionId={sessionId}
           onBack={() => setScreen('final')}
+          onRoastAgain={() => setScreen('upload')}
         />
       )}
     </div>

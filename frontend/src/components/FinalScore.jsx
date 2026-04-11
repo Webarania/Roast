@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getFinalRoast, submitToLeaderboard, generateShare } from '../api/client'
+import { getFinalRoast, submitToLeaderboard, generateShare, submitFeedback } from '../api/client'
 import html2canvas from 'html2canvas'
 
 /* ── Confetti ── */
@@ -113,7 +113,7 @@ const BADGE_CONFIG = {
   },
 }
 
-export default function FinalScore({ sessionId, resumeData, intensity = 'medium', onViewLeaderboard, onFixPlan, onReset }) {
+export default function FinalScore({ sessionId, resumeData, intensity = 'medium', onViewLeaderboard, onFixPlan, onReset, onRoastAgain }) {
   const scoreCardRef = useRef(null)
   const [result,      setResult]      = useState(null)
   const [loading,     setLoading]     = useState(true)
@@ -128,6 +128,12 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
   const [shareText,   setShareText]   = useState('')
   const [shareUrl,    setShareUrl]    = useState('')
   const [copied,      setCopied]      = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [feedbackRating, setFeedbackRating] = useState(0)
+  const [feedbackHover, setFeedbackHover] = useState(0)
+  const [feedbackMsg, setFeedbackMsg] = useState('')
+  const [feedbackSent, setFeedbackSent] = useState(false)
+  const [feedbackLoading, setFeedbackLoading] = useState(false)
 
   useEffect(() => {
     getFinalRoast(sessionId, intensity)
@@ -149,6 +155,8 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
         setTimeout(() => setRingActive(true), 200)
         setTimeout(() => setShowConfetti(true), 500)
         setTimeout(() => setShowConfetti(false), 4500)
+        // Show feedback popup after animations settle
+        setTimeout(() => setShowFeedback(true), 5000)
       })
       .catch(err => { setError(err.message); setLoading(false) })
   }, [sessionId])
@@ -203,6 +211,20 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
     navigator.clipboard.writeText(shareText)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackRating) return
+    setFeedbackLoading(true)
+    try {
+      await submitFeedback(sessionId, feedbackRating, feedbackMsg, displayName || resumeData?.name || '')
+      setFeedbackSent(true)
+      setTimeout(() => setShowFeedback(false), 2000)
+    } catch {
+      setShowFeedback(false)
+    } finally {
+      setFeedbackLoading(false)
+    }
   }
 
   const shareToTwitter  = () => {
@@ -285,6 +307,104 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
   return (
     <div className="min-h-screen flex flex-col items-center px-4 py-12 fire-bg relative overflow-y-auto">
       {showConfetti && <Confetti />}
+
+      {/* ── Feedback Modal ── */}
+      <AnimatePresence>
+        {showFeedback && !feedbackSent && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
+            onClick={() => setShowFeedback(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-md rounded-2xl p-6 relative"
+              style={{ background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(255,69,0,0.2)', boxShadow: '0 0 60px rgba(255,69,0,0.1)' }}
+            >
+              <button
+                onClick={() => setShowFeedback(false)}
+                className="absolute top-4 right-4 text-gray-600 hover:text-white transition-colors"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}
+              >
+                x
+              </button>
+              <div className="text-center mb-5">
+                <div className="text-3xl mb-2">How was your experience?</div>
+                <p className="text-gray-500 text-sm">Your feedback helps us improve Dev Roast AI</p>
+              </div>
+              {/* Stars */}
+              <div className="flex justify-center gap-2 mb-5">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <motion.button
+                    key={star}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
+                    onMouseEnter={() => setFeedbackHover(star)}
+                    onMouseLeave={() => setFeedbackHover(0)}
+                    onClick={() => setFeedbackRating(star)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer', fontSize: '36px',
+                      filter: (feedbackHover || feedbackRating) >= star ? 'none' : 'grayscale(1) opacity(0.3)',
+                      transition: 'filter 0.15s ease',
+                    }}
+                  >
+                    {(feedbackHover || feedbackRating) >= star ? '\u2B50' : '\u2606'}
+                  </motion.button>
+                ))}
+              </div>
+              {feedbackRating > 0 && (
+                <div className="text-center text-sm mb-3" style={{ color: '#ff8c00' }}>
+                  {feedbackRating === 5 ? 'Amazing!' : feedbackRating === 4 ? 'Great!' : feedbackRating === 3 ? 'Good' : feedbackRating === 2 ? 'Could be better' : 'We\'ll improve!'}
+                </div>
+              )}
+              {/* Message */}
+              <textarea
+                value={feedbackMsg}
+                onChange={e => setFeedbackMsg(e.target.value.slice(0, 500))}
+                placeholder="Tell us what you liked or what we can improve..."
+                rows={3}
+                className="w-full rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none transition-all mb-4 resize-none"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
+              />
+              <motion.button
+                whileHover={feedbackRating ? { scale: 1.03 } : {}}
+                whileTap={feedbackRating ? { scale: 0.97 } : {}}
+                onClick={handleFeedbackSubmit}
+                disabled={!feedbackRating || feedbackLoading}
+                className={`w-full btn-primary py-3 text-sm font-bold ${!feedbackRating ? 'opacity-40 cursor-not-allowed' : ''}`}
+              >
+                {feedbackLoading ? 'Submitting...' : 'Submit Feedback'}
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+        {showFeedback && feedbackSent && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
+            onClick={() => setShowFeedback(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              className="text-center p-8"
+            >
+              <div className="text-6xl mb-3">Thank you!</div>
+              <div className="text-green-400 font-bold text-lg">Your feedback has been recorded</div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="particles-container opacity-40" aria-hidden="true">
         {Array.from({ length: 10 }).map((_, i) => <div key={i} className="particle" />)}
@@ -595,10 +715,10 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            onClick={onReset}
+            onClick={onRoastAgain}
             className="btn-secondary py-3.5 text-sm flex items-center justify-center gap-2 font-semibold"
           >
-            🔄 Try Again
+            🔄 Roast Again
           </motion.button>
         </motion.div>
       </motion.div>

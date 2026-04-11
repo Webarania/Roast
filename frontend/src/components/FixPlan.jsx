@@ -23,7 +23,7 @@ function timelineIcon(timeline) {
   return '⏱️'
 }
 
-export default function FixPlan({ sessionId, onBack }) {
+export default function FixPlan({ sessionId, onBack, onRoastAgain }) {
   const [plan,    setPlan]    = useState(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState('')
@@ -296,7 +296,7 @@ export default function FixPlan({ sessionId, onBack }) {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => window.location.reload()}
+              onClick={onRoastAgain}
               className="btn-primary text-sm px-8 py-3 font-bold relative z-10"
             >
               🔄 Roast Me Again

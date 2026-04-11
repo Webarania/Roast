@@ -19,12 +19,13 @@ if USE_MONGO:
         client = pymongo.MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
         # Force a connection check
         client.admin.command('ping')
-        
+
         db = client.get_database("devroast")
         sessions_col = db.get_collection("sessions")
         leaderboard_col = db.get_collection("leaderboard")
         shares_col = db.get_collection("shares")
-        
+        feedback_col = db.get_collection("feedback")
+
         logger.info("🟢 Successfully connected to MongoDB Atlas!")
     except Exception as e:
         MONGO_ERROR = str(e)
@@ -37,6 +38,7 @@ if not USE_MONGO:
     _sessions: Dict[str, dict] = {}
     _leaderboard: List[dict] = []
     _share_store: Dict[str, dict] = {}
+    _feedback_store: List[dict] = []
 
 def create_session() -> str:
     session_id = str(uuid.uuid4())
@@ -81,24 +83,42 @@ def update_session(session_id: str, key: str, value) -> bool:
     return True
 
 def add_to_leaderboard(entry: dict) -> int:
+    # Use mobile as the unique key to prevent duplicate entries for the same person
+    mobile = entry.get("mobile")
     if USE_MONGO:
-        # Upsert the entry
-        leaderboard_col.update_one(
-            {"session_id": entry["session_id"]},
-            {"$set": entry},
-            upsert=True
-        )
+        if mobile:
+            # Upsert by mobile — same person updating their score
+            leaderboard_col.update_one(
+                {"mobile": mobile},
+                {"$set": entry},
+                upsert=True
+            )
+        else:
+            # Fallback: upsert by session_id
+            leaderboard_col.update_one(
+                {"session_id": entry["session_id"]},
+                {"$set": entry},
+                upsert=True
+            )
         # Calculate rank by counting how many docs have a higher score
         higher_scores = leaderboard_col.count_documents({"score": {"$gt": entry["score"]}})
         return higher_scores + 1
     else:
+        # In-memory: dedup by mobile first, then session_id
+        match_key = None
         for i, e in enumerate(_leaderboard):
+            if mobile and e.get("mobile") == mobile:
+                match_key = i
+                break
             if e["session_id"] == entry["session_id"]:
-                _leaderboard[i] = entry
-                _leaderboard.sort(key=lambda x: x["score"], reverse=True)
-                return next(i for i, e in enumerate(_leaderboard) if e["session_id"] == entry["session_id"]) + 1
+                match_key = i
+                break
 
-        _leaderboard.append(entry)
+        if match_key is not None:
+            _leaderboard[match_key] = entry
+        else:
+            _leaderboard.append(entry)
+
         _leaderboard.sort(key=lambda x: x["score"], reverse=True)
         return next(i for i, e in enumerate(_leaderboard) if e["session_id"] == entry["session_id"]) + 1
 
@@ -203,3 +223,30 @@ def get_leaderboard_count() -> int:
     if USE_MONGO:
         return leaderboard_col.count_documents({})
     return len(_leaderboard)
+
+
+# ── Feedback ──
+
+def add_feedback(entry: dict) -> bool:
+    if USE_MONGO:
+        feedback_col.insert_one(entry)
+    else:
+        _feedback_store.append(entry)
+    return True
+
+
+def get_feedback(limit: int = 20) -> List[dict]:
+    if USE_MONGO:
+        docs = list(
+            feedback_col.find({}, {"_id": 0})
+            .sort("created_at", pymongo.DESCENDING)
+            .limit(limit)
+        )
+        return docs
+    return sorted(_feedback_store, key=lambda x: x.get("created_at", ""), reverse=True)[:limit]
+
+
+def get_feedback_count() -> int:
+    if USE_MONGO:
+        return feedback_col.count_documents({})
+    return len(_feedback_store)

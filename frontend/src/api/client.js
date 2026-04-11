@@ -28,9 +28,10 @@ api.interceptors.response.use(
   }
 )
 
-export const uploadResume = (file) => {
+export const uploadResume = (file, mobile = '') => {
   const form = new FormData()
   form.append('file', file)
+  form.append('mobile', mobile)
   return api.post('/resume/upload', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 60000,
@@ -84,3 +85,9 @@ export const getCodeChallenge = (sessionId) =>
 
 export const evaluateCode = (sessionId, code) =>
   api.post('/roast/code-evaluate', { session_id: sessionId, code })
+
+export const submitFeedback = (sessionId, rating, message = '', displayName = '') =>
+  api.post('/feedback/submit', { session_id: sessionId, rating, message, display_name: displayName })
+
+export const getFeedback = (limit = 20) =>
+  api.get(`/feedback/?limit=${limit}`)

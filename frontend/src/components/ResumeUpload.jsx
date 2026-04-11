@@ -24,6 +24,7 @@ const INTENSITIES = [
 export default function ResumeUpload({ onComplete, intensity = 'medium', onIntensityChange }) {
   const [dragging, setDragging]   = useState(false)
   const [file, setFile]           = useState(null)
+  const [mobile, setMobile]       = useState('')
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState('')
   const [progressStep, setProgressStep] = useState(0)
@@ -59,6 +60,10 @@ export default function ResumeUpload({ onComplete, intensity = 'medium', onInten
 
   const handleSubmit = async () => {
     if (!file) return
+    if (!mobile || mobile.length < 10) {
+      triggerError('Please enter a valid mobile number to track your score.')
+      return
+    }
     setLoading(true)
     setError('')
     setProgressStep(0)
@@ -69,7 +74,7 @@ export default function ResumeUpload({ onComplete, intensity = 'medium', onInten
       const t2 = setTimeout(() => { setProgressStep(2); setProgressPct(65) }, 3000)
       const t3 = setTimeout(() => { setProgressStep(3); setProgressPct(85) }, 4500)
 
-      const data = await uploadResume(file)
+      const data = await uploadResume(file, mobile)
       clearTimeout(t1); clearTimeout(t2); clearTimeout(t3)
       setProgressPct(100)
       setTimeout(() => onComplete(data), 300)
@@ -123,8 +128,27 @@ export default function ResumeUpload({ onComplete, intensity = 'medium', onInten
         {/* Drop Zone */}
         <AnimatePresence mode="wait">
           {!loading && (
-            <motion.div
-              key="dropzone"
+            <>
+              {/* Mobile Number Input */}
+              <motion.div 
+                initial={{ opacity: 0, x: -10 }} 
+                animate={{ opacity: 1, x: 0 }}
+                className="mb-4"
+              >
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                  📱 Enter Mobile Number (To track your score)
+                </div>
+                <input 
+                  type="tel" 
+                  value={mobile}
+                  onChange={e => setMobile(e.target.value.replace(/\D/g, '').substring(0, 15))}
+                  placeholder="e.g. 9876543210"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-white focus:outline-none focus:border-[#ff4500]/50 transition-all font-mono"
+                />
+              </motion.div>
+
+              <motion.div
+                key="dropzone"
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}
@@ -209,6 +233,7 @@ export default function ResumeUpload({ onComplete, intensity = 'medium', onInten
                 )}
               </AnimatePresence>
             </motion.div>
+            </>
           )}
         </AnimatePresence>
 

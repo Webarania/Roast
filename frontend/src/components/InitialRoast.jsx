@@ -96,13 +96,13 @@ export default function InitialRoast({ sessionId, resumeData, intensity = 'mediu
       <div style={{ maxWidth: '640px', margin: '0 auto' }}>
 
         {/* Back to Home */}
-        <motion.div {...fadeUp(0)} style={{ marginBottom: '24px', display: 'flex' }}>
+        <motion.div {...fadeUp(0)} style={{ marginBottom: '24px' }}>
           <button 
             onClick={onReset}
             style={{ 
               background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', 
               fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px',
-              padding: 0
+              padding: '0', margin: '0'
             }}
             onMouseOver={e => e.currentTarget.style.color = '#fff'}
             onMouseOut={e => e.currentTarget.style.color = '#4b5563'}
