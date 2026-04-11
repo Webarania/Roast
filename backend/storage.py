@@ -225,6 +225,77 @@ def get_leaderboard_count() -> int:
     return len(_leaderboard)
 
 
+def cleanup_duplicate_leaderboard() -> dict:
+    """Remove duplicate leaderboard entries, keeping the latest per mobile or display_name."""
+    removed = 0
+    if USE_MONGO:
+        # Step 1: Dedup by mobile (non-empty)
+        pipeline = [
+            {"$match": {"mobile": {"$exists": True, "$ne": ""}}},
+            {"$sort": {"timestamp": -1}},
+            {"$group": {"_id": "$mobile", "latest_id": {"$first": "$_id"}, "count": {"$sum": 1}, "ids": {"$push": "$_id"}}},
+            {"$match": {"count": {"$gt": 1}}},
+        ]
+        for group in leaderboard_col.aggregate(pipeline):
+            # Delete all except the latest
+            ids_to_delete = [oid for oid in group["ids"] if oid != group["latest_id"]]
+            if ids_to_delete:
+                result = leaderboard_col.delete_many({"_id": {"$in": ids_to_delete}})
+                removed += result.deleted_count
+
+        # Step 2: Dedup by display_name for entries without mobile
+        pipeline2 = [
+            {"$match": {"$or": [{"mobile": {"$exists": False}}, {"mobile": ""}]}},
+            {"$sort": {"timestamp": -1}},
+            {"$group": {"_id": {"$toLower": "$display_name"}, "latest_id": {"$first": "$_id"}, "count": {"$sum": 1}, "ids": {"$push": "$_id"}}},
+            {"$match": {"count": {"$gt": 1}}},
+        ]
+        for group in leaderboard_col.aggregate(pipeline2):
+            ids_to_delete = [oid for oid in group["ids"] if oid != group["latest_id"]]
+            if ids_to_delete:
+                result = leaderboard_col.delete_many({"_id": {"$in": ids_to_delete}})
+                removed += result.deleted_count
+
+        # Step 3: Also dedup by display_name across ALL entries (catches old entries with same name but different mobile)
+        pipeline3 = [
+            {"$sort": {"timestamp": -1}},
+            {"$group": {"_id": {"$toLower": "$display_name"}, "latest_id": {"$first": "$_id"}, "count": {"$sum": 1}, "ids": {"$push": "$_id"}}},
+            {"$match": {"count": {"$gt": 1}}},
+        ]
+        for group in leaderboard_col.aggregate(pipeline3):
+            ids_to_delete = [oid for oid in group["ids"] if oid != group["latest_id"]]
+            if ids_to_delete:
+                result = leaderboard_col.delete_many({"_id": {"$in": ids_to_delete}})
+                removed += result.deleted_count
+
+        remaining = leaderboard_col.count_documents({})
+    else:
+        seen_mobile = {}
+        seen_name = {}
+        keep = []
+        # Sort by timestamp desc so we keep latest
+        sorted_lb = sorted(_leaderboard, key=lambda x: x.get("timestamp", ""), reverse=True)
+        for entry in sorted_lb:
+            mobile = entry.get("mobile", "")
+            name = entry.get("display_name", "").strip().lower()
+            if mobile and mobile in seen_mobile:
+                removed += 1
+                continue
+            if name and name in seen_name:
+                removed += 1
+                continue
+            if mobile:
+                seen_mobile[mobile] = True
+            if name:
+                seen_name[name] = True
+            keep.append(entry)
+        _leaderboard.clear()
+        _leaderboard.extend(sorted(keep, key=lambda x: x["score"], reverse=True))
+        remaining = len(_leaderboard)
+
+    return {"removed": removed, "remaining": remaining}
+
+
 # ── Feedback ──
 
 def add_feedback(entry: dict) -> bool:

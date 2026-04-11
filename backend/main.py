@@ -70,6 +70,14 @@ async def health():
     }
 
 
+@app.post("/admin/cleanup-duplicates")
+async def cleanup_duplicates():
+    """Remove duplicate leaderboard entries. Keeps the latest entry per person."""
+    result = storage.cleanup_duplicate_leaderboard()
+    logger.info(f"Leaderboard cleanup: removed {result['removed']}, remaining {result['remaining']}")
+    return result
+
+
 @app.get("/stats")
 async def stats():
     """Return real server stats from DB."""
