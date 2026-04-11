@@ -184,7 +184,7 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
       // 2. Generate the share link from backend (for tracking/DB)
       const data = await generateShare(sessionId, displayName || resumeData?.name || 'Dev')
       setShareText(data.share_text)
-      setShareUrl('https://madanaidev.fun/roast') // Use the specific requested redirect link
+      setShareUrl('https://madanaidev.fun/roast/') // Use the custom domain link
       
       // 3. Download the image for the user
       if (imageData) {

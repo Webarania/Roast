@@ -200,8 +200,8 @@ export default function Landing({ onStart }) {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
                   style={{ display: 'flex', gap: '24px', marginTop: '32px' }}>
                   {[
-                    { value: '12,847+', label: 'Devs Roasted' },
-                    { value: '31%', label: 'Share Rate' },
+                    { value: `${devsRoasted.toLocaleString()}+`, label: 'Devs Roasted' },
+                    { value: `${shareRate}%`, label: 'Share Rate' },
                     { value: '<60s', label: 'Full Session' },
                   ].map(({ value, label }) => (
                     <div key={label} style={{ textAlign: 'left' }}>

@@ -464,7 +464,24 @@ async def evaluate_code(challenge: dict, code: str) -> Dict:
     return extract_json(raw)
 
 async def generate_fix_plan(session: dict) -> Dict:
-    prompt = f"Create learning fix plan for dev with skills: {safe_join(session.get('resume_data', {}).get('skills'))}"
+    resume = session.get("resume_data", {})
+    evals = session.get("evaluations", [])
+    
+    prompt = f"""
+    Create a personalized learning 'fix plan' for {resume.get('name')}.
+    Skills: {safe_join(resume.get('skills'))}
+    Recent blunders in interview: {safe_join([e.get('mini_roast') for e in evals])}
+
+    Return ONLY valid JSON:
+    {{
+      "roadmap": [
+        {{"title": "Step 1", "desc": "What to learn"}},
+        {{"title": "Step 2", "desc": "What to learn"}}
+      ],
+      "resume_tips": ["Tip 1", "Tip 2"],
+      "priority_skills": ["Skill 1", "Skill 2"]
+    }}
+    """
     raw = await ai_call(prompt, system="Tech career coach. Return JSON.", timeout=15.0)
     return extract_json(raw)
 
