@@ -83,5 +83,6 @@ async def stats():
     return {
         "devs_roasted": total_roasted,
         "share_rate": max(31, share_rate),
+        "avg_session": storage.get_avg_session_time(),
         "active_sessions": storage.get_session_count(),
     }

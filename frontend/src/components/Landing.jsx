@@ -73,17 +73,16 @@ function CodeRain() {
     </div>
   )
 }
-
 export default function Landing({ onStart }) {
   const [leaderboard, setLeaderboard] = useState([])
-  const [stats, setStats] = useState({ devs_roasted: 12847, share_rate: 31 })
+  const [stats, setStats] = useState({ devs_roasted: 12847, share_rate: 31, avg_session: 45 })
   const [statsVisible, setStatsVisible] = useState(false)
   const statsRef = useRef(null)
   const [roastIndex, setRoastIndex] = useState(0)
 
   const devsRoasted = useCounter(stats.devs_roasted, 2000, statsVisible)
   const shareRate   = useCounter(stats.share_rate,    1600, statsVisible)
-  const avgSeconds  = useCounter(45,    1400, statsVisible)
+  const avgSeconds  = useCounter(stats.avg_session,   1400, statsVisible)
 
   useEffect(() => {
     const timer = setInterval(() => setRoastIndex(i => (i + 1) % SAMPLE_ROASTS.length), 4000)
