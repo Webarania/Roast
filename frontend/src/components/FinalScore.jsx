@@ -305,7 +305,7 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center px-4 py-12 fire-bg relative overflow-y-auto">
+    <div className="min-h-screen flex flex-col items-center px-4 py-8 fire-bg relative overflow-y-auto">
       {showConfetti && <Confetti />}
 
       {/* ── Feedback Modal ── */}
@@ -316,7 +316,7 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] flex items-center justify-center px-4"
-            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
+            style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)' }}
             onClick={() => setShowFeedback(false)}
           >
             <motion.div
@@ -325,63 +325,96 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-md rounded-2xl p-6 relative"
-              style={{ background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(255,69,0,0.2)', boxShadow: '0 0 60px rgba(255,69,0,0.1)' }}
+              className="w-full max-w-md rounded-2xl p-6 sm:p-8 relative"
+              style={{ background: '#0c0c0c', border: '1px solid rgba(255,69,0,0.25)', boxShadow: '0 0 80px rgba(255,69,0,0.12), 0 20px 60px rgba(0,0,0,0.6)' }}
             >
+              {/* Close button */}
               <button
                 onClick={() => setShowFeedback(false)}
-                className="absolute top-4 right-4 text-gray-600 hover:text-white transition-colors"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}
+                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-all"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#6b7280', cursor: 'pointer', fontSize: '14px' }}
+                onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff' }}
+                onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#6b7280' }}
               >
-                x
+                ✕
               </button>
-              <div className="text-center mb-5">
-                <div className="text-3xl mb-2">How was your experience?</div>
+
+              <div className="text-center mb-6">
+                <div className="text-4xl mb-3">💬</div>
+                <h3 className="text-xl font-black text-white mb-1">How was your experience?</h3>
                 <p className="text-gray-500 text-sm">Your feedback helps us improve Dev Roast AI</p>
               </div>
+
               {/* Stars */}
-              <div className="flex justify-center gap-2 mb-5">
+              <div className="flex justify-center gap-3 mb-5">
                 {[1, 2, 3, 4, 5].map(star => (
                   <motion.button
                     key={star}
-                    whileHover={{ scale: 1.2 }}
+                    whileHover={{ scale: 1.25, y: -4 }}
                     whileTap={{ scale: 0.9 }}
                     onMouseEnter={() => setFeedbackHover(star)}
                     onMouseLeave={() => setFeedbackHover(0)}
                     onClick={() => setFeedbackRating(star)}
                     style={{
-                      background: 'none', border: 'none', cursor: 'pointer', fontSize: '36px',
-                      filter: (feedbackHover || feedbackRating) >= star ? 'none' : 'grayscale(1) opacity(0.3)',
-                      transition: 'filter 0.15s ease',
+                      background: 'none', border: 'none', cursor: 'pointer', fontSize: '40px',
+                      filter: (feedbackHover || feedbackRating) >= star ? 'none' : 'grayscale(1) opacity(0.25)',
+                      transition: 'filter 0.15s ease, transform 0.15s ease',
                     }}
                   >
-                    {(feedbackHover || feedbackRating) >= star ? '\u2B50' : '\u2606'}
+                    ⭐
                   </motion.button>
                 ))}
               </div>
+
               {feedbackRating > 0 && (
-                <div className="text-center text-sm mb-3" style={{ color: '#ff8c00' }}>
-                  {feedbackRating === 5 ? 'Amazing!' : feedbackRating === 4 ? 'Great!' : feedbackRating === 3 ? 'Good' : feedbackRating === 2 ? 'Could be better' : 'We\'ll improve!'}
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center text-sm font-semibold mb-4"
+                  style={{ color: feedbackRating >= 4 ? '#4ade80' : feedbackRating >= 3 ? '#fbbf24' : '#f87171' }}
+                >
+                  {feedbackRating === 5 ? 'Amazing! We love it!' : feedbackRating === 4 ? 'Great to hear!' : feedbackRating === 3 ? 'Thanks, we\'ll keep improving!' : feedbackRating === 2 ? 'We can do better!' : 'Sorry! We\'ll improve!'}
+                </motion.div>
               )}
+
               {/* Message */}
               <textarea
                 value={feedbackMsg}
                 onChange={e => setFeedbackMsg(e.target.value.slice(0, 500))}
-                placeholder="Tell us what you liked or what we can improve..."
+                placeholder="Tell us what you liked or what we can improve... (optional)"
                 rows={3}
                 className="w-full rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none transition-all mb-4 resize-none"
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
+                onFocus={e => e.target.style.borderColor = 'rgba(255,69,0,0.4)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
               />
-              <motion.button
-                whileHover={feedbackRating ? { scale: 1.03 } : {}}
-                whileTap={feedbackRating ? { scale: 0.97 } : {}}
-                onClick={handleFeedbackSubmit}
-                disabled={!feedbackRating || feedbackLoading}
-                className={`w-full btn-primary py-3 text-sm font-bold ${!feedbackRating ? 'opacity-40 cursor-not-allowed' : ''}`}
-              >
-                {feedbackLoading ? 'Submitting...' : 'Submit Feedback'}
-              </motion.button>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowFeedback(false)}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold text-gray-400 transition-all"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}
+                  onMouseOver={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'}
+                  onMouseOut={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+                >
+                  Skip
+                </button>
+                <motion.button
+                  whileHover={feedbackRating ? { scale: 1.03 } : {}}
+                  whileTap={feedbackRating ? { scale: 0.97 } : {}}
+                  onClick={handleFeedbackSubmit}
+                  disabled={!feedbackRating || feedbackLoading}
+                  className={`flex-[2] btn-primary py-3 text-sm font-bold ${!feedbackRating ? 'opacity-40 cursor-not-allowed' : ''}`}
+                >
+                  {feedbackLoading ? (
+                    <motion.span
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                    />
+                  ) : 'Submit Feedback'}
+                </motion.button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -391,16 +424,23 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] flex items-center justify-center"
-            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
+            style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)' }}
             onClick={() => setShowFeedback(false)}
           >
             <motion.div
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              className="text-center p-8"
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="text-center p-10 rounded-2xl"
+              style={{ background: 'rgba(12,12,12,0.95)', border: '1px solid rgba(74,222,128,0.25)', boxShadow: '0 0 60px rgba(74,222,128,0.1)' }}
             >
-              <div className="text-6xl mb-3">Thank you!</div>
-              <div className="text-green-400 font-bold text-lg">Your feedback has been recorded</div>
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 0.6 }}
+                className="text-6xl mb-4"
+              >🎉</motion.div>
+              <div className="text-white font-black text-xl mb-1">Thank you!</div>
+              <div className="text-green-400 font-semibold text-sm">Your feedback has been recorded</div>
             </motion.div>
           </motion.div>
         )}
@@ -410,24 +450,23 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
         {Array.from({ length: 10 }).map((_, i) => <div key={i} className="particle" />)}
       </div>
 
-      {/* Back to Home */}
-      <motion.div 
-        initial={{ opacity: 0, x: -20 }} 
-        animate={{ opacity: 1, x: 0 }}
-        style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 20 }}
-      >
-        <button 
-          onClick={onReset}
-          style={{ 
-            background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', 
-            fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' 
-          }}
-          onMouseOver={e => e.target.style.color = '#fff'}
-          onMouseOut={e => e.target.style.color = '#4b5563'}
+      {/* Main content wrapper with proper back button alignment */}
+      <div className="w-full max-w-2xl relative z-10">
+        {/* Back to Home — in-flow, properly aligned */}
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="mb-6"
         >
-          ← Back to Home
-        </button>
-      </motion.div>
+          <button
+            onClick={onReset}
+            className="text-gray-500 hover:text-white text-sm flex items-center gap-2 transition-colors font-semibold"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            ← Back to Home
+          </button>
+        </motion.div>
+      </div>
 
       <motion.div
         ref={scoreCardRef}
@@ -656,12 +695,12 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
               >
                 {shareText}
               </div>
-              <div className="flex gap-2 flex-wrap">
+              <div className="grid grid-cols-2 gap-2">
                 <motion.button
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={copyShare}
-                  className="btn-secondary text-sm px-4 py-2.5 flex-1 flex items-center justify-center gap-2"
+                  className="btn-secondary text-sm px-3 py-2.5 flex items-center justify-center gap-2"
                 >
                   {copied ? '✅ Copied!' : '📋 Copy'}
                 </motion.button>
@@ -669,7 +708,7 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={shareToTwitter}
-                  className="btn-secondary text-sm px-4 py-2.5 flex-1 flex items-center justify-center gap-2"
+                  className="btn-secondary text-sm px-3 py-2.5 flex items-center justify-center gap-2"
                 >
                   𝕏 Twitter/X
                 </motion.button>
@@ -677,7 +716,7 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={shareToLinkedIn}
-                  className="btn-secondary text-sm px-4 py-2.5 flex-1 flex items-center justify-center gap-2"
+                  className="btn-secondary text-sm px-3 py-2.5 flex items-center justify-center gap-2"
                 >
                   in LinkedIn
                 </motion.button>
@@ -685,7 +724,7 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={shareToInstagram}
-                  className="btn-secondary text-sm px-4 py-2.5 flex-1 flex items-center justify-center gap-2"
+                  className="btn-secondary text-sm px-3 py-2.5 flex items-center justify-center gap-2"
                 >
                   📸 Instagram
                 </motion.button>
@@ -695,31 +734,33 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
         </motion.div>
 
         {/* ── Action Buttons ── */}
-        <motion.div variants={itemVariants} className="grid grid-cols-3 gap-3 pb-8">
+        <motion.div variants={itemVariants} className="space-y-3 pb-8">
           <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={onViewLeaderboard}
-            className="btn-secondary py-3.5 text-sm flex items-center justify-center gap-2 font-semibold"
-          >
-            🏆 Leaderboard
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.03 }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
             onClick={onFixPlan}
-            className="btn-primary py-3.5 text-sm flex items-center justify-center gap-2 font-bold"
+            className="btn-primary py-3.5 text-sm flex items-center justify-center gap-2 font-bold w-full"
           >
             🛠️ Fix My Skills
           </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={onRoastAgain}
-            className="btn-secondary py-3.5 text-sm flex items-center justify-center gap-2 font-semibold"
-          >
-            🔄 Roast Again
-          </motion.button>
+          <div className="grid grid-cols-2 gap-3">
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={onViewLeaderboard}
+              className="btn-secondary py-3 text-sm flex items-center justify-center gap-2 font-semibold"
+            >
+              🏆 Leaderboard
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={onRoastAgain}
+              className="btn-secondary py-3 text-sm flex items-center justify-center gap-2 font-semibold"
+            >
+              🔄 Roast Again
+            </motion.button>
+          </div>
         </motion.div>
       </motion.div>
     </div>

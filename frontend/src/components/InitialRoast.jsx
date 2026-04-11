@@ -97,15 +97,10 @@ export default function InitialRoast({ sessionId, resumeData, intensity = 'mediu
 
         {/* Back to Home */}
         <motion.div {...fadeUp(0)} style={{ marginBottom: '24px' }}>
-          <button 
+          <button
             onClick={onReset}
-            style={{ 
-              background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', 
-              fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '0', margin: '0'
-            }}
-            onMouseOver={e => e.currentTarget.style.color = '#fff'}
-            onMouseOut={e => e.currentTarget.style.color = '#4b5563'}
+            className="text-gray-500 hover:text-white text-sm flex items-center gap-2 transition-colors font-semibold"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
             ← Back to Home
           </button>

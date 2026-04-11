@@ -490,20 +490,28 @@ export default function Landing({ onStart }) {
                 <motion.div key={i}
                   initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
                   transition={{ delay: i * 0.06 }}
+                  whileHover={{ y: -3, borderColor: 'rgba(255,69,0,0.15)' }}
                   style={{
                     padding: '20px', borderRadius: '16px', background: 'rgba(255,255,255,0.02)',
                     border: '1px solid rgba(255,255,255,0.06)', position: 'relative',
+                    transition: 'all 0.3s ease',
                   }}>
+                  {/* Top accent line */}
+                  <div style={{ position: 'absolute', top: 0, left: '20px', right: '20px', height: '1px', background: `linear-gradient(90deg, transparent, rgba(255,${fb.rating >= 4 ? '215,0' : fb.rating >= 3 ? '140,0' : '69,0'},0.2), transparent)` }} />
                   {/* Stars */}
                   <div style={{ marginBottom: '10px', fontSize: '16px', letterSpacing: '2px' }}>
                     {Array.from({ length: 5 }, (_, j) => (
-                      <span key={j} style={{ opacity: j < fb.rating ? 1 : 0.2 }}>{'\u2B50'}</span>
+                      <span key={j} style={{ opacity: j < fb.rating ? 1 : 0.15 }}>⭐</span>
                     ))}
                   </div>
                   {/* Message */}
-                  {fb.message && (
+                  {fb.message ? (
                     <p style={{ fontSize: '13px', color: '#d1d5db', lineHeight: 1.6, margin: '0 0 12px 0', fontStyle: 'italic' }}>
                       "{fb.message}"
+                    </p>
+                  ) : (
+                    <p style={{ fontSize: '12px', color: '#4b5563', margin: '0 0 12px 0' }}>
+                      {fb.rating >= 4 ? 'Loved it!' : fb.rating >= 3 ? 'Good experience' : 'Left a rating'}
                     </p>
                   )}
                   {/* Author */}
