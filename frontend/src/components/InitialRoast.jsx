@@ -275,7 +275,7 @@ export default function InitialRoast({ sessionId, resumeData, intensity = 'mediu
               </span>
             ) : '🎤 Start Interview'}
           </motion.button>
-          <p style={{ fontSize: '11px', color: '#4b5563', marginTop: '10px' }}>5 questions · ~3 min · No retakes</p>
+          <p style={{ fontSize: '11px', color: '#4b5563', marginTop: '10px' }}>10 questions (MCQ + Scenario) · ~5 min · No retakes</p>
         </motion.div>
 
       </div>

@@ -67,15 +67,21 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
         raise
     except Exception as e:
         logger.error(f"AI parsing error: {e}")
-        # Fallback keyword check if AI fails or is overloaded
+        # 150+ Comprehensive Tech Keywords
         tech_keywords = [
-            "python", "javascript", "java", "react", "node", "sql", "api",
-            "developer", "engineer", "software", "programming", "code", "git",
-            "html", "css", "database", "framework", "backend", "frontend", "fullstack",
-            "devops", "kubernetes", "docker", "aws", "azure", "gcp", "terraform", "jenkins",
-            "sap", "abap", "hana", "fiori", "oracle", "plsql", "dba", "db analyst", "data analyst",
-            "ml", "ai", "artificial intelligence", "machine learning", "pytorch", "tensorflow",
-            "cybersecurity", "security", "network", "system admin", "linux", "unix", "cloud",
+            "python", "javascript", "typescript", "java", "c++", "c#", "ruby", "rust", "go", "golang", "swift", "kotlin", "php", "dart", "sql", "plsql", "t-sql", "nosql",
+            "react", "angular", "vue", "svelte", "next.js", "nuxt", "express", "node.js", "django", "flask", "fastapi", "spring boot", "laravel", "rails", "asp.net",
+            "aws", "azure", "gcp", "google cloud", "docker", "kubernetes", "k8s", "terraform", "ansible", "jenkins", "ci/cd", "github actions", "gitlab ci", "circleci",
+            "mongodb", "postgresql", "mysql", "redis", "elasticsearch", "cassandra", "dynamodb", "oracle", "mariadb", "sqlite", "neo4j", "firebase", "supabase",
+            "devops", "sre", "mlops", "data engineering", "data science", "machine learning", "deep learning", "ai", "artificial intelligence", "nlp", "computer vision",
+            "pytorch", "tensorflow", "keras", "scikit-learn", "pandas", "numpy", "spark", "hadoop", "kafka", "flink", "airflow", "dbt", "tableau", "power bi",
+            "cybersecurity", "infosec", "pentesting", "ethical hacking", "siem", "soc", "firewall", "network", "tcp/ip", "dns", "dhcp", "linux", "unix", "ubuntu", "centos",
+            "sap", "abap", "hana", "fiori", "basis", "succesfactors", "salesforce", "apex", "soql", "mulesoft", "servicenow", "powerapps", "dynamics 365",
+            "html", "css", "sass", "less", "tailwind", "bootstrap", "material ui", "chakra ui", "three.js", "webgl", "d3.js", "gsap", "unity", "unreal engine",
+            "ios", "android", "react native", "flutter", "xamarin", "capacitor", "cordova", "ionic", "swiftui", "jetpack compose",
+            "git", "bitbucket", "jira", "confluence", "trello", "agile", "scrum", "kanban", "graphql", "rest api", "grpc", "soap", "microservices", "serverless",
+            "blockchain", "solidity", "ethereum", "smart contracts", "web3", "embedded", "rtos", "arduino", "raspberry pi", "firmware", "verilog", "vhdl",
+            "qa", "automation", "selenium", "cypress", "playwright", "jest", "mocha", "chai", "postman", "jmeter", "k6"
         ]
         text_lower = pdf_text.lower()
         

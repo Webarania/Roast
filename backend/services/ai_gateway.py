@@ -212,14 +212,38 @@ async def parse_resume(resume_text: str) -> Dict:
 async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -> Dict:
     style = "gentle teasing" if intensity == "mild" else "absolutely brutal, career-ending, and deeply insulting honesty" if intensity == "savage" else "sarcastic and witty"
     
-    # Add a random seeds/styles to prevent repetitive jokes
+    # 30+ Randomized themes/personas to ensure unique roasts every time
     roast_themes = [
         "Focus on how their skills look like a copy-pasted tutorial list.",
         "Focus on how their projects sound like things built in a weekend while watching Netflix.",
-        "Focus on their 'experience' being just sitting in meetings.",
+        "Focus on their 'experience' being just sitting in meetings or changing button colors.",
         "Focus on the contrast between their high-ego job title and their basic skill set.",
         "Use a meta-commentary style where you mock the person reading the resume.",
-        "Focus on the 'gap' between what they claim and what they actually know."
+        "Focus on the 'gap' between what they claim and what they actually know.",
+        "Act like a recruiter who is drinking too much coffee and has seen 1000 bad resumes today.",
+        "Act like a tech billionaire who thinks everyone else is a 'peasant' coder.",
+        "Act like a keyboard warrior who thinks everything except Assembly is 'not real coding'.",
+        "Focus on how many buzzwords they used without actually explaining anything.",
+        "Joke about how their resume is just a list of things they 'heard about' once.",
+        "Compare their tech stack to a museum of ancient artifacts.",
+        "Focus on how their LinkedIn profile probably has more 'likes' than their GitHub has 'commits'.",
+        "Act like a logic-obsessed AI that finds human resumes 'inefficient' and 'illogical'.",
+        "Mock the specific fonts or formatting they probably used (Comic Sans vibes).",
+        "Focus on 'Self-Taught' developers who clearly missed some important chapters.",
+        "Focus on 'Senior' developers who only have 1 year of experience repeated 5 times.",
+        "Joke about their 'Projects' being just clones of Todo apps or Netflix UIs.",
+        "Focus on how their skills are a weird mix that makes no sense (e.g. Photoshop + Kubernetes).",
+        "Act like a Gordon Ramsay of code: 'THIS CODE IS RAW!'.",
+        "Focus on their 'Certifications' being basically participation trophies.",
+        "Joke about how they probably put 'MS Word' in their skills section in 2026.",
+        "Focus on how their resume is a cry for help from someone who hates their job.",
+        "Mock their 'Soft Skills' section as a cover for their lack of 'Hard Skills'.",
+        "Act like a cynical startup founder who only hires 'Rockstars' and 'Ninjas'.",
+        "Focus on their GitHub having more forks than original ideas.",
+        "Joke about how their 'Passion for coding' is actually just a 'Passion for a steady paycheck'.",
+        "Compare their career path to a random number generator.",
+        "Focus on how they list 'AI' because they used ChatGPT once to write an email.",
+        "Act like a developer from the 70s who is confused by 'Cloud' and 'Web 3'."
     ]
     theme = random.choice(roast_themes)
 
@@ -230,19 +254,15 @@ async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -
     Skills: {safe_join(resume_data.get('skills'))}
     Experience: {resume_data.get('experience_level')}
     
-    Theme: {theme}
+    Theme/Persona: {theme}
 
-    IMPORTANT: Be nuanced. Don't just say they are lying. Say they 'might' be lying or 'it smells like a YouTube tutorial project'. 
-    If savage, be heartless but creative. Do NOT use the standard 'MNC' or 'Kindergarten' jokes. 
-    Customize the roast to their specific domain:
-    - For DevOps: Mock their yaml files and "infinite" pipelines that just crash.
-    - For SAP/Oracle: Roast their ancient tech stack and boring enterprise lifestyle.
-    - For AI/ML: Mock them for being just "wrapper" developers or using basic prompts.
-    - For DB Analysts: Joke about how they are just Excel experts with a complex.
+    IMPORTANT: Be creative and unpredictable. Do NOT use standard phrases like 'eligible for MNC' or 'school teacher'. 
+    Make it feel like a unique person is roasting them. Use sarcasm, puns, and tech-specific insults.
+    If savage, be devastatingly honest about their 'claimed' expertise.
 
     Return ONLY valid JSON:
     {{
-      "roast": "Brutal 2-4 line verdict",
+      "roast": "Devastating but creative 2-4 line verdict",
       "weak_skills": ["skill1"],
       "strong_skills": ["skill2"],
       "red_flags": ["flag1"]

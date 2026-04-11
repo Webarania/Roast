@@ -104,7 +104,15 @@ def add_to_leaderboard(entry: dict) -> int:
 
 def get_leaderboard(limit: int = 50, offset: int = 0) -> List[dict]:
     if USE_MONGO:
-        docs = list(leaderboard_col.find({}, {"_id": 0}).sort("score", pymongo.DESCENDING).skip(offset).limit(limit))
+        # Get entries from the last 7 days
+        from datetime import datetime, timedelta
+        one_week_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
+        
+        docs = list(leaderboard_col.find({"timestamp": {"$gte": one_week_ago}}, {"_id": 0}).sort("score", pymongo.DESCENDING).skip(offset).limit(limit))
+        
+        # If week is empty, show all time top as fallback
+        if not docs:
+            docs = list(leaderboard_col.find({}, {"_id": 0}).sort("score", pymongo.DESCENDING).skip(offset).limit(limit))
         return docs
     return _leaderboard[offset:offset + limit]
 
