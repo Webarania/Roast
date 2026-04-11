@@ -201,7 +201,7 @@ export default function Landing({ onStart }) {
                   {[
                     { value: `${devsRoasted.toLocaleString()}+`, label: 'Devs Roasted' },
                     { value: `${shareRate}%`, label: 'Share Rate' },
-                    { value: '<60s', label: 'Full Session' },
+                    { value: `${avgSeconds}s`, label: 'Avg Session' },
                   ].map(({ value, label }) => (
                     <div key={label} style={{ textAlign: 'left' }}>
                       <div className="fire-gradient" style={{ fontSize: '20px', fontWeight: 900 }}>{value}</div>
