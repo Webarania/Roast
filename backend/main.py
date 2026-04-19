@@ -100,14 +100,6 @@ async def remove_from_leaderboard(display_name: str):
     return {"removed": removed, "display_name": display_name}
 
 
-@app.delete("/admin/reset-all")
-async def reset_all_data():
-    """Wipe all collections in the database. Use with caution."""
-    result = storage.reset_all()
-    logger.warning(f"DATABASE RESET: {result}")
-    return result
-
-
 @app.get("/stats")
 async def stats():
     """Return real server stats from DB."""
