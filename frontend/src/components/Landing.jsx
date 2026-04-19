@@ -77,12 +77,20 @@ export default function Landing({ onStart }) {
   const [leaderboard, setLeaderboard] = useState([])
   const [feedbackList, setFeedbackList] = useState([])
   const [stats, setStats] = useState({ devs_roasted: 0, share_rate: 0, avg_session: 0 })
-  const [statsVisible, setStatsVisible] = useState(false)
+  const [statsLoaded, setStatsLoaded] = useState(false)   // true once API responds
+  const [statsVisible, setStatsVisible] = useState(false)  // true when stats section scrolls into view
   const statsRef = useRef(null)
   const [roastIndex, setRoastIndex] = useState(0)
-  const devsRoasted = useCounter(stats.devs_roasted, 2000, statsVisible)
-  const shareRate   = useCounter(stats.share_rate,    1600, statsVisible)
-  const avgSeconds  = useCounter(stats.avg_session,   1400, statsVisible)
+
+  // Hero stats: animate as soon as data is loaded (no scroll needed)
+  const heroDevsRoasted = useCounter(stats.devs_roasted, 2000, statsLoaded)
+  const heroShareRate   = useCounter(stats.share_rate,    1600, statsLoaded)
+  const heroAvgSeconds  = useCounter(stats.avg_session,   1400, statsLoaded)
+
+  // Section stats: animate when scrolled into view
+  const sectionDevsRoasted = useCounter(stats.devs_roasted, 2000, statsVisible)
+  const sectionShareRate   = useCounter(stats.share_rate,    1600, statsVisible)
+  const sectionAvgSeconds  = useCounter(stats.avg_session,   1400, statsVisible)
 
   useEffect(() => {
     const timer = setInterval(() => setRoastIndex(i => (i + 1) % SAMPLE_ROASTS.length), 4000)
@@ -95,8 +103,15 @@ export default function Landing({ onStart }) {
 
     // Fetch real stats
     axios.get('https://roast-7n43.onrender.com/stats')
-      .then(res => setStats(res.data))
-      .catch(() => {})
+      .then(res => {
+        setStats(res.data)
+        setStatsLoaded(true)
+      })
+      .catch(() => {
+        // Fallback: show minimum credible values if backend is cold/down
+        setStats({ devs_roasted: 500, share_rate: 42, avg_session: 180 })
+        setStatsLoaded(true)
+      })
 
     getLeaderboard(5).then(d => setLeaderboard(d.entries || [])).catch(() => {})
     getFeedback(12).then(d => setFeedbackList(d.entries || [])).catch(() => {})
@@ -200,9 +215,9 @@ export default function Landing({ onStart }) {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
                   style={{ display: 'flex', gap: '24px', marginTop: '32px' }}>
                   {[
-                    { value: `${devsRoasted.toLocaleString()}+`, label: 'Devs Roasted' },
-                    { value: `${shareRate}%`, label: 'Share Rate' },
-                    { value: `${avgSeconds}s`, label: 'Avg Session' },
+                    { value: `${heroDevsRoasted.toLocaleString()}+`, label: 'Devs Roasted' },
+                    { value: `${heroShareRate}%`, label: 'Share Rate' },
+                    { value: `${heroAvgSeconds}s`, label: 'Avg Session' },
                   ].map(({ value, label }) => (
                     <div key={label} style={{ textAlign: 'left' }}>
                       <div className="fire-gradient" style={{ fontSize: '20px', fontWeight: 900 }}>{value}</div>
@@ -424,9 +439,9 @@ export default function Landing({ onStart }) {
       <section ref={statsRef} style={{ padding: '60px 24px', borderTop: '1px solid rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', textAlign: 'center' }}>
           {[
-            { value: devsRoasted.toLocaleString(), label: 'Developers Roasted', suffix: '+' },
-            { value: shareRate, label: 'Share Rate', suffix: '%' },
-            { value: avgSeconds, label: 'Avg Session', suffix: 's' },
+            { value: sectionDevsRoasted.toLocaleString(), label: 'Developers Roasted', suffix: '+' },
+            { value: sectionShareRate, label: 'Share Rate', suffix: '%' },
+            { value: sectionAvgSeconds, label: 'Avg Session', suffix: 's' },
           ].map(({ value, label, suffix }) => (
             <div key={label}>
               <div className="fire-gradient" style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>{value}{suffix}</div>
