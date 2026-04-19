@@ -390,3 +390,20 @@ def get_feedback_count() -> int:
     if USE_MONGO:
         return feedback_col.count_documents({})
     return len(_feedback_store)
+
+
+def reset_all() -> dict:
+    """Drop all data from every collection. Returns counts of deleted documents."""
+    deleted = {}
+    if USE_MONGO:
+        deleted["sessions"] = sessions_col.delete_many({}).deleted_count
+        deleted["leaderboard"] = leaderboard_col.delete_many({}).deleted_count
+        deleted["shares"] = shares_col.delete_many({}).deleted_count
+        deleted["feedback"] = feedback_col.delete_many({}).deleted_count
+    else:
+        deleted["sessions"] = len(_sessions); _sessions.clear()
+        deleted["leaderboard"] = len(_leaderboard); _leaderboard.clear()
+        deleted["shares"] = len(_share_store); _share_store.clear()
+        deleted["feedback"] = len(_feedback_store); _feedback_store.clear()
+    deleted["status"] = "all_cleared"
+    return deleted
