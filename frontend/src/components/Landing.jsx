@@ -370,26 +370,26 @@ export default function Landing({ onStart }) {
             </p>
             
             <p style={{ fontSize: '16px', color: '#9ca3af', lineHeight: 1.7, marginTop: '24px', maxWidth: '640px', margin: '24px auto 0' }}>
-              We're at 23,000 on Instagram. When we hit 50,000 — we drop <strong>Roasted Resume</strong>.
+              We're at 23,000 on Instagram. When we hit <strong>1,00,000</strong> (1 Lakh) — we drop <strong>Roasted Resume</strong>.
               <br /><br />
               An AI that doesn't just review your resume. It rebuilds it — to FAANG acceptance standards. Role-specific. ATS-optimized. Brutally honest. The kind of feedback that used to cost ₹10,000 from a senior engineer.
               <br /><br />
-              <span style={{ color: '#fff', fontWeight: 700 }}>Free. For our community. At 50K.</span>
+              <span style={{ color: '#fff', fontWeight: 700 }}>Free. For our community. At 1 Lakh.</span>
             </p>
 
             {/* Progress Area */}
             <div style={{ marginTop: '48px', maxWidth: '500px', margin: '48px auto 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>🔥 23,000 / 50,000 followers</span>
-                <span style={{ fontSize: '12px', color: '#ff6b35', fontWeight: 800 }}>46% TO UNLOCK</span>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>🔥 23,000 / 1,00,000 followers</span>
+                <span style={{ fontSize: '12px', color: '#ff6b35', fontWeight: 800 }}>23% TO UNLOCK</span>
               </div>
               <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '99px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <motion.div 
-                  initial={{ width: 0 }} 
-                  whileInView={{ width: '46%' }} 
+                <motion.div
+                  initial={{ width: 0 }}
+                  whileInView={{ width: '23%' }}
                   viewport={{ once: true }}
                   transition={{ duration: 1.5, ease: 'easeOut', delay: 0.5 }}
-                  style={{ height: '100%', background: 'linear-gradient(90deg, #ff4500, #ff8c00, #ffd700)', boxShadow: '0 0 15px rgba(255,69,0,0.5)' }} 
+                  style={{ height: '100%', background: 'linear-gradient(90deg, #ff4500, #ff8c00, #ffd700)', boxShadow: '0 0 15px rgba(255,69,0,0.5)' }}
                 />
               </div>
               <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#4b5563', fontSize: '12px' }}>

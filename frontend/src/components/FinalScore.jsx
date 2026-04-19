@@ -191,10 +191,24 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
 
       // 2. Generate the share link from backend (for tracking/DB)
       const data = await generateShare(sessionId, displayName || resumeData?.name || 'Dev')
-      setShareText(data.share_text)
-      setShareUrl('https://webarania.com/roast/') // Use the custom domain link
-      
-      // 3. Download the image for the user
+
+      // 3. Build share text using local result data (avoids zero-score bug from stale session)
+      const score = result?.total_score ?? data.share_data?.score ?? 0
+      const badgeTitle = result?.badge_title ?? data.share_data?.badge_title ?? ''
+      const roastSnippet = (result?.final_roast || '').substring(0, 100)
+      const shareLink = data.share_url || 'https://webarania.com/roast/'
+
+      const builtShareText = (
+        `🔥 I just got roasted by Dev Roast AI!\n\n` +
+        `Score: ${score}/100 | Badge: ${badgeTitle}\n\n` +
+        `"${roastSnippet}${roastSnippet.length >= 100 ? '...' : ''}"\n\n` +
+        `Think you can do better? Challenge me: ${shareLink}`
+      )
+
+      setShareText(builtShareText)
+      setShareUrl(shareLink)
+
+      // 4. Download the image for the user
       if (imageData) {
         const link = document.createElement('a')
         link.download = `dev-roast-score-${displayName || 'dev'}.png`
@@ -228,22 +242,28 @@ export default function FinalScore({ sessionId, resumeData, intensity = 'medium'
   }
 
   const shareToTwitter  = () => {
-    const text = `🔥 I just got roasted by Dev Roast AI!\n\nScore: ${result.total_score}/100\nBadge: ${result.badge_title}\n\n"${result.final_roast.substring(0, 100)}..."\n\nGet exposed here: https://webarania.com/roast`
+    const score = result?.total_score ?? 0
+    const badge = result?.badge_title ?? ''
+    const roast = (result?.final_roast || '').substring(0, 100)
+    const link = shareUrl || 'https://webarania.com/roast'
+    const text = `🔥 I just got roasted by Dev Roast AI!\n\nScore: ${score}/100\nBadge: ${badge}\n\n"${roast}..."\n\nGet exposed here: ${link}`
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank')
   }
 
   const shareToLinkedIn = () => {
-    const url = `https://webarania.com/roast`
-    // LinkedIn doesn't support pre-filled text well, so we rely on the URL and the downloaded image
+    const url = shareUrl || 'https://webarania.com/roast'
     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank')
   }
 
   const shareToInstagram = () => {
-    const text = `🔥 Dev Roast AI Score: ${result.total_score}/100\n🏆 Badge: ${result.badge_title}\n\n${result.final_roast}\n\nAnalyze your resume at webarania.com/roast`
+    const score = result?.total_score ?? 0
+    const badge = result?.badge_title ?? ''
+    const roast = result?.final_roast || ''
+    const text = `🔥 Dev Roast AI Score: ${score}/100\n🏆 Badge: ${badge}\n\n${roast}\n\nAnalyze your resume at webarania.com/roast`
     navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-    
+
     alert("🚀 Instagram Format Ready!\n\n1. Your score card image was downloaded.\n2. The viral roast text is copied to your clipboard.\n\nOpening Instagram now... Paste the text into your Story or Bio!")
     window.open(`https://www.instagram.com/`, '_blank')
   }

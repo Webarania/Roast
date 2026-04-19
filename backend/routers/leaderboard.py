@@ -21,6 +21,15 @@ async def submit_to_leaderboard(req: LeaderboardSubmitRequest):
 
     display_name = (req.display_name or "Anonymous Dev").strip()[:30]
 
+    resume_data = session.get("resume_data", {})
+    evaluations = session.get("evaluations", [])
+
+    # Per-skill scores for breakdown
+    skill_scores = {}
+    for e in evaluations:
+        skill = e.get("skill", "unknown")
+        skill_scores[skill] = e.get("score", 0)
+
     entry = {
         "session_id": req.session_id,
         "display_name": display_name,
@@ -30,6 +39,13 @@ async def submit_to_leaderboard(req: LeaderboardSubmitRequest):
         "badge": final_result["badge"],
         "badge_title": final_result["badge_title"],
         "timestamp": datetime.utcnow().isoformat(),
+        "skills": resume_data.get("skills", [])[:15],
+        "job_title": resume_data.get("job_title", ""),
+        "experience_level": resume_data.get("experience_level", ""),
+        "skill_scores": skill_scores,
+        "total_questions": len(evaluations),
+        "bluff_count": sum(1 for e in evaluations if e.get("is_bluffing", False)),
+        "fake_skills": final_result.get("fake_skills", []),
     }
 
     rank = storage.add_to_leaderboard(entry)

@@ -117,19 +117,79 @@ def add_to_leaderboard(entry: dict) -> int:
         _leaderboard.sort(key=lambda x: x["score"], reverse=True)
         return next(i for i, e in enumerate(_leaderboard) if e["session_id"] == entry["session_id"]) + 1
 
+def _unique_key_expr():
+    """
+    MongoDB expression that produces a unique-user key.
+    Priority: mobile (non-empty) → email (non-empty) → lowercase display_name.
+    """
+    return {
+        "$cond": {
+            "if": {"$and": [{"$ne": ["$mobile", ""]}, {"$ne": ["$mobile", None]}]},
+            "then": "$mobile",
+            "else": {
+                "$cond": {
+                    "if": {"$and": [{"$ne": ["$email", ""]}, {"$ne": ["$email", None]}]},
+                    "then": "$email",
+                    "else": {"$toLower": "$display_name"},
+                }
+            },
+        }
+    }
+
+
+def _dedup_pipeline(match_stage: dict, offset: int, limit: int) -> list:
+    """Build an aggregation pipeline that deduplicates by mobile/email/name."""
+    return [
+        {"$match": match_stage} if match_stage else {"$match": {}},
+        {"$sort": {"score": pymongo.DESCENDING}},
+        {"$group": {
+            "_id": _unique_key_expr(),
+            "display_name": {"$first": "$display_name"},
+            "score": {"$max": "$score"},
+            "badge": {"$first": "$badge"},
+            "badge_title": {"$first": "$badge_title"},
+            "timestamp": {"$first": "$timestamp"},
+            "session_id": {"$first": "$session_id"},
+            "mobile": {"$first": "$mobile"},
+            "email": {"$first": "$email"},
+        }},
+        {"$sort": {"score": pymongo.DESCENDING}},
+        {"$skip": offset},
+        {"$limit": limit},
+        {"$project": {"_id": 0}},
+    ]
+
+
 def get_leaderboard(limit: int = 50, offset: int = 0) -> List[dict]:
     if USE_MONGO:
-        # Get entries from the last 7 days
         from datetime import datetime, timedelta
         one_week_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
-        
-        docs = list(leaderboard_col.find({"timestamp": {"$gte": one_week_ago}}, {"_id": 0}).sort("score", pymongo.DESCENDING).skip(offset).limit(limit))
-        
-        # If week is empty, show all time top as fallback
+
+        # This week, unique per mobile/email/name, highest score wins
+        docs = list(leaderboard_col.aggregate(
+            _dedup_pipeline({"timestamp": {"$gte": one_week_ago}}, offset, limit)
+        ))
+
+        # Fallback: all-time if week is empty
         if not docs:
-            docs = list(leaderboard_col.find({}, {"_id": 0}).sort("score", pymongo.DESCENDING).skip(offset).limit(limit))
+            docs = list(leaderboard_col.aggregate(
+                _dedup_pipeline({}, offset, limit)
+            ))
         return docs
-    return _leaderboard[offset:offset + limit]
+
+    # In-memory: deduplicate by mobile → email → display_name
+    seen = {}
+    for entry in _leaderboard:
+        mobile = (entry.get("mobile") or "").strip()
+        email = (entry.get("email") or "").strip()
+        name = (entry.get("display_name") or "").strip().lower()
+        key = mobile or email or name
+        if not key:
+            key = entry.get("session_id", "")
+        if key not in seen or entry["score"] > seen[key]["score"]:
+            seen[key] = entry
+    unique_sorted = sorted(seen.values(), key=lambda x: x["score"], reverse=True)
+    return unique_sorted[offset:offset + limit]
 
 def get_user_rank(session_id: str) -> int:
     if USE_MONGO:

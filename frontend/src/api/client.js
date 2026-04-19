@@ -10,7 +10,7 @@ api.interceptors.response.use(
   (err) => {
     const status = err.response?.status
     const message = err.response?.data?.detail || err.message || 'Something went wrong'
-    
+
     // Auto-recovery for Session Not Found (happens after backend restart/deploy)
     if (status === 404 && (message.toLowerCase().includes('session') || message.toLowerCase().includes('not found'))) {
       localStorage.removeItem('devroast_session')
@@ -22,6 +22,11 @@ api.interceptors.response.use(
     if (status === 429) {
       alert("🔥 Too many roasts! Our AI is on fire. Please wait a minute before trying again.")
       return new Promise(() => {})
+    }
+
+    // Timeout / Gateway timeout handling
+    if (status === 504 || err.code === 'ECONNABORTED' || message.toLowerCase().includes('timeout')) {
+      return Promise.reject(new Error('Request timed out. The AI is taking too long — please try again.'))
     }
 
     return Promise.reject(new Error(message))

@@ -26,8 +26,10 @@ logger = logging.getLogger(__name__)
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-async def call_groq(prompt: str, system: str = "", timeout: float = 15.0) -> str:
-    """Call Groq API asynchronously (OpenAI-compatible)."""
+async def call_groq(prompt: str, system: str = "", timeout: float = 12.0) -> str:
+    """Call Groq API asynchronously (OpenAI-compatible).
+    Timeout kept at 12s so Groq+Gemini fallback fits within Render's 30s limit.
+    """
     if not GROQ_API_KEY:
         raise ValueError("GROQ_API_KEY is not configured")
 
@@ -39,7 +41,7 @@ async def call_groq(prompt: str, system: str = "", timeout: float = 15.0) -> str
     payload = {
         "model": GROQ_MODEL,
         "messages": messages,
-        "temperature": 0.8, # Higher temperature for more variety
+        "temperature": 0.8,
         "max_tokens": 1024,
     }
 
@@ -60,13 +62,18 @@ async def call_groq(prompt: str, system: str = "", timeout: float = 15.0) -> str
             resp.raise_for_status()
             data = resp.json()
             return data["choices"][0]["message"]["content"]
+        except httpx.TimeoutException:
+            logger.warning("Groq timed out")
+            raise
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
                 raise HTTPException(status_code=429, detail="Too many requests to AI. Please slow down.")
             raise
 
-async def call_gemini(prompt: str, system: str = "", timeout: float = 15.0) -> str:
-    """Call Google Gemini API asynchronously."""
+async def call_gemini(prompt: str, system: str = "", timeout: float = 14.0) -> str:
+    """Call Google Gemini API asynchronously.
+    Timeout kept at 14s — this is the fallback, so Groq(12s)+Gemini(14s) ≈ 26s < Render 30s.
+    """
     if not GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY is not configured")
 
@@ -74,26 +81,38 @@ async def call_gemini(prompt: str, system: str = "", timeout: float = 15.0) -> s
         model_name=GEMINI_MODEL,
         system_instruction=system if system else None
     )
-    
+
     try:
-        response = await model.generate_content_async(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.8,
-                max_output_tokens=1024,
-            )
+        response = await asyncio.wait_for(
+            model.generate_content_async(
+                prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.8,
+                    max_output_tokens=1024,
+                )
+            ),
+            timeout=timeout
         )
         return response.text
+    except asyncio.TimeoutError:
+        logger.warning("Gemini timed out")
+        raise
     except Exception as e:
         if "429" in str(e) or "ResourceExhausted" in str(e):
             raise HTTPException(status_code=429, detail="Gemini API limit reached. Try again in a minute.")
         raise
 
-async def ai_call(prompt: str, system: str = "", timeout: float = 15.0) -> str:
-    """Unified AI call with fallback: Groq -> Gemini."""
+async def ai_call(prompt: str, system: str = "", timeout: float = 12.0) -> str:
+    """Unified AI call with fallback: Groq → Gemini.
+
+    Timeout budget is split so both providers fit within Render's 30s limit:
+      Groq  ≤ timeout      (default 12s)
+      Gemini ≤ timeout + 2  (default 14s)
+    Total worst-case ≈ 26s, safely under 30s.
+    """
     errors = []
-    
-    # Try Groq first
+
+    # Try Groq first (fast)
     if GROQ_API_KEY:
         try:
             return await call_groq(prompt, system, timeout)
@@ -103,24 +122,27 @@ async def ai_call(prompt: str, system: str = "", timeout: float = 15.0) -> str:
             else:
                 errors.append(f"Groq: {str(e.detail)}")
         except Exception as e:
-            logger.warning(f"Groq call failed, trying Gemini fallback: {e}")
+            logger.warning(f"Groq failed, trying Gemini fallback: {e}")
             errors.append(f"Groq: {str(e)}")
-            
-    # Try Gemini fallback
+
+    # Try Gemini fallback (gets a bit more time)
     if GEMINI_API_KEY:
         try:
-            return await call_gemini(prompt, system, timeout)
+            return await call_gemini(prompt, system, timeout + 2)
         except HTTPException as e:
             if e.status_code == 429:
-                raise # Pass through 429
+                raise
             errors.append(f"Gemini: {str(e.detail)}")
         except Exception as e:
-            logger.error(f"Gemini call failed: {e}")
+            logger.error(f"Gemini failed: {e}")
             errors.append(f"Gemini: {str(e)}")
-            
+
     if any("429" in str(err) for err in errors):
         raise HTTPException(status_code=429, detail="AI Service is currently overloaded. Please wait a moment.")
-        
+
+    if any("timeout" in str(err).lower() or "TimeoutError" in str(err) for err in errors):
+        raise HTTPException(status_code=504, detail="AI service is taking too long. Please try again.")
+
     raise RuntimeError(f"All AI providers failed or none configured. Errors: {'; '.join(errors)}")
 
 def extract_json(text: str) -> Any:
@@ -207,8 +229,7 @@ async def parse_resume(resume_text: str) -> Dict:
       "years_of_experience": 3
     }}
     """
-    # Reduced timeout to 15s to beat Render's 30s wall
-    raw = await ai_call(prompt, system="Professional CV Auditor. You distinguish between resumes and technical manuals.", timeout=15.0)
+    raw = await ai_call(prompt, system="Professional CV Auditor. You distinguish between resumes and technical manuals.", timeout=12.0)
     return extract_json(raw)
 
 async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -> Dict:
@@ -245,7 +266,27 @@ async def generate_initial_roast(resume_data: dict, intensity: str = "medium") -
         "Joke about how their 'Passion for coding' is actually just a 'Passion for a steady paycheck'.",
         "Compare their career path to a random number generator.",
         "Focus on how they list 'AI' because they used ChatGPT once to write an email.",
-        "Act like a developer from the 70s who is confused by 'Cloud' and 'Web 3'."
+        "Act like a developer from the 70s who is confused by 'Cloud' and 'Web 3'.",
+        "Focus on how their resume looks like it was generated by ChatGPT with zero editing.",
+        "Act like a detective who just cracked the case of 'The Missing Experience'.",
+        "Focus on how they list 'Agile' as a skill but have never been in a real standup.",
+        "Compare their career to a loading bar stuck at 12%.",
+        "Act like a frustrated code reviewer who keeps clicking 'Request Changes'.",
+        "Focus on how their 'Full Stack' means they can center a div... sometimes.",
+        "Act like a senior architect who just reviewed their 'microservices' (it's one monolith).",
+        "Focus on how they probably think REST API means 'taking a break from coding'.",
+        "Compare their portfolio projects to a museum of TODO app variations.",
+        "Act like a Silicon Valley VC who is pitching their resume to the shredder.",
+        "Focus on how their skills section is longer than their actual work experience.",
+        "Act like a tech podcast host who invited the wrong guest.",
+        "Focus on how they claim 'DevOps' because they once SSHed into a server.",
+        "Compare their coding journey to someone who read the Spark Notes of programming.",
+        "Act like an open-source maintainer who just received their worst pull request.",
+        "Focus on how their years of experience are just one year repeated multiple times.",
+        "Act like a competitive programmer who can't believe this person calls themselves a developer.",
+        "Focus on how they list every framework they've heard of, not ones they've used.",
+        "Compare their project descriptions to a creative writing fiction class.",
+        "Act like a tech influencer doing a live resume review and trying not to laugh.",
     ]
     theme = random.choice(roast_themes)
 
@@ -298,7 +339,7 @@ async def generate_questions(resume_data: dict, count: int = 5, intensity: str =
       }}
     ]
     """
-    raw = await ai_call(prompt, system="Senior tech interviewer. Scenario-based only. No generic definitions. Return JSON array.", timeout=20.0)
+    raw = await ai_call(prompt, system="Senior tech interviewer. Scenario-based only. No generic definitions. Return JSON array.", timeout=12.0)
     return extract_json(raw)
 
 async def generate_mcqs(resume_data: dict, count: int = 5) -> list:
@@ -325,7 +366,7 @@ async def generate_mcqs(resume_data: dict, count: int = 5) -> list:
       }}
     ]
     """
-    raw = await ai_call(prompt, system="MCQ Generator. Use variety. Return JSON array.", timeout=20.0)
+    raw = await ai_call(prompt, system="MCQ Generator. Use variety. Return JSON array.", timeout=12.0)
     return extract_json(raw)
 
 async def evaluate_answer(question: str, skill: str, answer: str) -> Dict:
@@ -365,13 +406,38 @@ async def generate_final_roast(session: dict) -> Dict:
     avg = sum(e.get("score", 0) for e in evals) / len(evals) if evals else 0
     intensity = session.get("intensity", "medium")
     
-    # Randomized themes for final roasts
+    # 30 Randomized themes for final roasts — ensures variety
     final_themes = [
         "Focus on how they should probably change careers to something non-technical.",
         "Focus on how they are just a 'copy-paste' engineer.",
         "Focus on how their skill gap is wider than the Grand Canyon.",
         "Focus on how they might survive in a company that doesn't care about quality.",
-        "Focus on their specific blunders in the interview questions."
+        "Focus on their specific blunders in the interview questions.",
+        "Act like a disappointed mentor who once believed in them.",
+        "Act like an AI that is genuinely confused by their answers.",
+        "Compare their interview performance to a junior dev's first day.",
+        "Focus on how they peaked during the tutorial phase and never grew.",
+        "Focus on how their LinkedIn says 'problem solver' but they couldn't solve a single problem.",
+        "Act like a roast comedian at a tech conference after-party.",
+        "Focus on how their resume promised a Ferrari but their answers delivered a bicycle.",
+        "Compare their debugging skills to someone using console.log for everything.",
+        "Focus on how many times they said 'I think' instead of 'I know'.",
+        "Act like a tech lead who just finished reviewing their pull request.",
+        "Focus on the disconnect between their confidence level and their actual knowledge.",
+        "Act like a senior dev who has to clean up their code every sprint.",
+        "Focus on how their answers sounded like they were reading from a textbook they didn't understand.",
+        "Compare their technical depth to a puddle pretending to be an ocean.",
+        "Focus on how Stack Overflow would reject their questions for being too basic.",
+        "Act like a startup CTO deciding whether to fire them after their trial period.",
+        "Focus on how they treat frameworks like Pokémon — gotta list 'em all, master none.",
+        "Compare their interview to a comedy show where nobody's laughing.",
+        "Focus on how their 'experience' is basically watching YouTube tutorials at 2x speed.",
+        "Act like a code reviewer who found zero tests in their 'production-ready' project.",
+        "Focus on how their GitHub contributions are just editing README files.",
+        "Compare their technical journey to someone who read the table of contents and skipped the book.",
+        "Focus on the irony of them listing 'fast learner' as a skill while proving the opposite.",
+        "Act like a hiring manager who regrets giving them 30 minutes of their life.",
+        "Focus on how their strongest skill appears to be overestimating their own abilities.",
     ]
     theme = random.choice(final_themes)
 

@@ -37,6 +37,21 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled error: {exc}", exc_info=True)
+
+    # Handle timeout errors specifically
+    import asyncio
+    import httpx
+    if isinstance(exc, (asyncio.TimeoutError, TimeoutError)):
+        return JSONResponse(
+            status_code=504,
+            content={"detail": "AI service timed out. Please try again."},
+        )
+    if isinstance(exc, httpx.TimeoutException):
+        return JSONResponse(
+            status_code=504,
+            content={"detail": "AI service timed out. Please try again."},
+        )
+
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error. Please try again."},

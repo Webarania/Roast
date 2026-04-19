@@ -67,21 +67,53 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
         raise
     except Exception as e:
         logger.error(f"AI parsing error: {e}")
-        # 150+ Comprehensive Tech Keywords
+        # 200+ Comprehensive Tech Keywords
         tech_keywords = [
+            # Programming Languages
             "python", "javascript", "typescript", "java", "c++", "c#", "ruby", "rust", "go", "golang", "swift", "kotlin", "php", "dart", "sql", "plsql", "t-sql", "nosql",
-            "react", "angular", "vue", "svelte", "next.js", "nuxt", "express", "node.js", "django", "flask", "fastapi", "spring boot", "laravel", "rails", "asp.net",
+            "scala", "elixir", "erlang", "haskell", "clojure", "perl", "lua", "r", "matlab", "julia", "fortran", "cobol", "assembly", "objective-c", "groovy",
+            "f#", "ocaml", "zig", "nim", "crystal", "v", "solidity",
+            # Frontend Frameworks
+            "react", "angular", "vue", "svelte", "next.js", "nuxt", "gatsby", "remix", "astro", "qwik", "solid.js", "alpine.js", "htmx", "lit", "stencil",
+            # Backend Frameworks
+            "express", "node.js", "django", "flask", "fastapi", "spring boot", "spring", "laravel", "rails", "asp.net", ".net", "nestjs", "koa", "hapi",
+            "gin", "echo", "fiber", "actix", "rocket", "phoenix", "sinatra", "strapi", "adonis", "sails",
+            # Cloud & DevOps
             "aws", "azure", "gcp", "google cloud", "docker", "kubernetes", "k8s", "terraform", "ansible", "jenkins", "ci/cd", "github actions", "gitlab ci", "circleci",
+            "pulumi", "cloudformation", "helm", "istio", "prometheus", "grafana", "datadog", "new relic", "splunk", "nagios", "vagrant", "packer",
+            "argocd", "spinnaker", "tekton", "openshift", "rancher", "eks", "aks", "gke", "lambda", "cloud functions", "fargate",
+            # Databases
             "mongodb", "postgresql", "mysql", "redis", "elasticsearch", "cassandra", "dynamodb", "oracle", "mariadb", "sqlite", "neo4j", "firebase", "supabase",
+            "cockroachdb", "planetscale", "vitess", "couchdb", "influxdb", "timescaledb", "clickhouse", "snowflake", "bigquery", "redshift",
+            # Data & AI/ML
             "devops", "sre", "mlops", "data engineering", "data science", "machine learning", "deep learning", "ai", "artificial intelligence", "nlp", "computer vision",
             "pytorch", "tensorflow", "keras", "scikit-learn", "pandas", "numpy", "spark", "hadoop", "kafka", "flink", "airflow", "dbt", "tableau", "power bi",
+            "llm", "langchain", "hugging face", "openai", "gpt", "bert", "transformers", "rag", "vector database", "pinecone", "weaviate", "chromadb",
+            "opencv", "matplotlib", "seaborn", "plotly", "streamlit", "gradio", "mlflow", "kubeflow", "sagemaker", "vertex ai",
+            # Security
             "cybersecurity", "infosec", "pentesting", "ethical hacking", "siem", "soc", "firewall", "network", "tcp/ip", "dns", "dhcp", "linux", "unix", "ubuntu", "centos",
+            "owasp", "burp suite", "nmap", "wireshark", "metasploit", "kali", "zero trust", "oauth", "jwt", "saml", "openid",
+            # Enterprise / ERP
             "sap", "abap", "hana", "fiori", "basis", "succesfactors", "salesforce", "apex", "soql", "mulesoft", "servicenow", "powerapps", "dynamics 365",
+            "workday", "oracle erp", "netsuite", "odoo", "zoho",
+            # UI / Design / Frontend Libs
             "html", "css", "sass", "less", "tailwind", "bootstrap", "material ui", "chakra ui", "three.js", "webgl", "d3.js", "gsap", "unity", "unreal engine",
+            "figma", "sketch", "adobe xd", "storybook", "framer motion", "lottie", "canvas", "svg", "webassembly", "wasm",
+            # Mobile
             "ios", "android", "react native", "flutter", "xamarin", "capacitor", "cordova", "ionic", "swiftui", "jetpack compose",
+            "expo", "maui", "kotlin multiplatform",
+            # Tools & Practices
             "git", "bitbucket", "jira", "confluence", "trello", "agile", "scrum", "kanban", "graphql", "rest api", "grpc", "soap", "microservices", "serverless",
-            "blockchain", "solidity", "ethereum", "smart contracts", "web3", "embedded", "rtos", "arduino", "raspberry pi", "firmware", "verilog", "vhdl",
-            "qa", "automation", "selenium", "cypress", "playwright", "jest", "mocha", "chai", "postman", "jmeter", "k6"
+            "webpack", "vite", "rollup", "esbuild", "parcel", "babel", "eslint", "prettier", "npm", "yarn", "pnpm",
+            # Blockchain & Web3
+            "blockchain", "ethereum", "smart contracts", "web3", "hardhat", "truffle", "polygon", "defi", "nft",
+            # Embedded & IoT
+            "embedded", "rtos", "arduino", "raspberry pi", "firmware", "verilog", "vhdl", "iot", "mqtt", "zigbee", "lora",
+            # Testing & QA
+            "qa", "automation", "selenium", "cypress", "playwright", "jest", "mocha", "chai", "postman", "jmeter", "k6",
+            "pytest", "junit", "testng", "robot framework", "appium", "detox", "vitest", "testing library",
+            # Message Queues & Streaming
+            "rabbitmq", "celery", "bull", "nats", "pulsar", "zeromq", "activemq",
         ]
         text_lower = pdf_text.lower()
         
